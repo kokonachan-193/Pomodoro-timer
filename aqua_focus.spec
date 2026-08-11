@@ -32,6 +32,8 @@ a = Analysis(
         'pygame',
         'certifi',
         'i18n',
+        'agiu',
+        'settings_store',
     ],
     hookspath=[],
     hooksconfig={},

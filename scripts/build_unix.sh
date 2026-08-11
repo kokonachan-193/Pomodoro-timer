@@ -53,6 +53,8 @@ elif [[ "$OS" == "Linux" ]]; then
     --add-data "assets:assets" --add-data "docs:docs" \
     --icon "$ICON_ICO" \
     main.py
+  # Windows FS is case-insensitive; avoid leaving a conflicting AquaFocus.spec
+  rm -f "$ROOT/AquaFocus.spec"
   mkdir -p dist/AquaFocus/data
   # .desktop helper
   cat > dist/AquaFocus/AquaFocus.desktop <<EOF

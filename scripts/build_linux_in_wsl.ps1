@@ -12,12 +12,15 @@ if ($LASTEXITCODE -ne 0) {
     throw "Ubuntu WSL not ready. Run .\scripts\setup_wsl_and_build_linux.ps1 as Administrator first (reboot if asked)."
 }
 
-# Windows path → /mnt/c/...
-$wslRoot = wsl -d Ubuntu -- wslpath -a "$Root"
-$wslRoot = ($wslRoot | Out-String).Trim()
+# Robust Windows → /mnt/... (avoid broken wslpath on some hosts)
+$drive = $Root.Substring(0, 1).ToLowerInvariant()
+$rest = ($Root.Substring(2) -replace "\\", "/")
+$wslRoot = "/mnt/$drive$rest"
 Write-Host "WSL project path: $wslRoot"
 
+$tmpSh = Join-Path $env:TEMP "aqua_focus_wsl_build.sh"
 $bash = @"
+#!/bin/bash
 set -euo pipefail
 cd '$wslRoot'
 sudo apt-get update
@@ -26,20 +29,37 @@ python3 -m venv .venv-wsl
 . .venv-wsl/bin/activate
 pip install -U pip
 pip install -r requirements.txt pyinstaller
+# normalize CRLF on shell scripts if copied from Windows
+sed -i 's/\r$//' scripts/build_unix.sh scripts/make_release_unix.sh || true
 chmod +x scripts/build_unix.sh scripts/make_release_unix.sh
 ./scripts/make_release_unix.sh
+# smoke: binary exists and --help / file type
+test -x dist/AquaFocus/AquaFocus
+file dist/AquaFocus/AquaFocus || true
 ls -lh dist/releases/
 "@
+# Write UTF-8 without BOM, then force LF
+[System.IO.File]::WriteAllText($tmpSh, ($bash -replace "`r`n", "`n" -replace "`r", "`n"))
+
+$wslTmp = "/mnt/c/Users/kaihu.KOKONA/AppData/Local/Temp/aqua_focus_wsl_build.sh"
+# Prefer wslpath for temp when available
+$wslTmpResolved = (wsl -d Ubuntu -- wslpath -a $tmpSh 2>$null | Out-String).Trim()
+if ($wslTmpResolved -and $wslTmpResolved.StartsWith("/")) { $wslTmp = $wslTmpResolved }
 
 Write-Host "==> build inside Ubuntu" -ForegroundColor Cyan
-$bash | wsl -d Ubuntu -- bash -s
+wsl -d Ubuntu -- bash $wslTmp
 if ($LASTEXITCODE -ne 0) { throw "WSL build failed" }
 
 $outDir = Join-Path $Root "downloads\Linux"
-New-Item -ItemType Directory -Force -Path $outDir | Out-Null
-Copy-Item (Join-Path $Root "dist\releases\AquaFocus-Linux-Portable-*.tar.gz") $outDir -Force
+$ubuntuDir = Join-Path $Root "downloads\Ubuntu"
+New-Item -ItemType Directory -Force -Path $outDir, $ubuntuDir | Out-Null
+$tarball = Get-ChildItem (Join-Path $Root "dist\releases\AquaFocus-Linux-Portable-*.tar.gz") | Select-Object -First 1
+if (-not $tarball) { throw "Linux tarball missing" }
+Copy-Item $tarball.FullName $outDir -Force
+Copy-Item $tarball.FullName (Join-Path $ubuntuDir "AquaFocus-Ubuntu-Portable-1.0.0.tar.gz") -Force
 Remove-Item (Join-Path $outDir "PLACE_PACKAGE_HERE.txt") -ErrorAction SilentlyContinue
+Remove-Item (Join-Path $ubuntuDir "PLACE_PACKAGE_HERE.txt") -ErrorAction SilentlyContinue
 
 Write-Host ""
-Write-Host "OK → downloads\Linux\" -ForegroundColor Green
-Get-ChildItem $outDir | Format-Table Name, Length -AutoSize
+Write-Host "OK → downloads\Linux\ and downloads\Ubuntu\" -ForegroundColor Green
+Get-ChildItem $outDir, $ubuntuDir | Format-Table Name, Length -AutoSize

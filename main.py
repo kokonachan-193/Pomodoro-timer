@@ -22,7 +22,7 @@ from urllib.parse import unquote, urlparse, quote
 
 import customtkinter as ctk
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 
 try:
     import ctypes
@@ -52,6 +52,15 @@ except ImportError:  # pragma: no cover
     imageio_ffmpeg = None
 
 from i18n import I18n, PRESET_KEYS, TIP_KEYS, QUOTE_KEYS
+from settings_store import SettingsStore
+from agiu import (
+    APP_VERSION,
+    AgiuController,
+    ReleaseInfo,
+    RELEASES_PAGE,
+    fetch_latest_release,
+    is_newer,
+)
 
 
 def app_root() -> Path:
@@ -433,6 +442,60 @@ except ImportError:  # pragma: no cover
     np = None
 
 
+def list_output_audio_devices() -> list[tuple[int, str]]:
+    """Return [(device_index, display_name), ...] for playback devices."""
+    if sd is None:
+        return []
+    out: list[tuple[int, str]] = []
+    try:
+        devices = sd.query_devices()
+        hostapis = sd.query_hostapis()
+    except Exception:
+        return []
+    for i, d in enumerate(devices):
+        try:
+            if int(d.get("max_output_channels") or 0) <= 0:
+                continue
+            name = str(d.get("name") or f"Device {i}").strip()
+            api_i = int(d.get("hostapi", 0))
+            api = ""
+            try:
+                api = str(hostapis[api_i].get("name") or "")
+            except Exception:
+                pass
+            label = f"{name}" + (f"  ·  {api}" if api else "")
+            out.append((i, label))
+        except Exception:
+            continue
+    return out
+
+
+def resolve_output_device_index(
+    preferred_index: int | None,
+    preferred_name: str,
+) -> int | None:
+    """Match saved device by index+name; None if user has not chosen / missing."""
+    devices = list_output_audio_devices()
+    if not devices:
+        return None
+    name = (preferred_name or "").strip()
+    if preferred_index is not None:
+        for idx, label in devices:
+            if idx == preferred_index:
+                if not name or name in label or label.startswith(name):
+                    return idx
+    if name:
+        for idx, label in devices:
+            if name == label or name in label or label.startswith(name):
+                return idx
+        # bare device name without hostapi suffix
+        bare = name.split("  ·  ")[0].strip()
+        for idx, label in devices:
+            if label.startswith(bare):
+                return idx
+    return None
+
+
 # Cloud stream player (no full download)
 
 class CloudAudioStreamer:
@@ -449,6 +512,7 @@ class CloudAudioStreamer:
         self._stop = threading.Event()
         self._pause = threading.Event()
         self._volume = 0.55
+        self._device: int | None = None
         self._resolve_url: Callable[[], str] | None = None
         self._loop = True
         self.playing = False
@@ -456,6 +520,9 @@ class CloudAudioStreamer:
 
     def set_volume(self, value: float) -> None:
         self._volume = max(0.0, min(1.0, float(value)))
+
+    def set_device(self, device: int | None) -> None:
+        self._device = device
 
     def start(
         self,
@@ -469,6 +536,8 @@ class CloudAudioStreamer:
             raise RuntimeError("ffmpeg が必要です（imageio-ffmpeg）")
         if sd is None or np is None:
             raise RuntimeError("sounddevice / numpy が必要です")
+        if self._device is None:
+            raise RuntimeError("音声出力デバイスを選択してください")
 
         self._resolve_url = resolve_url
         self._loop = loop
@@ -562,6 +631,7 @@ class CloudAudioStreamer:
                     channels=self.CHANNELS,
                     dtype="int16",
                     blocksize=0,
+                    device=self._device,
                 ) as stream:
                     while not self._stop.is_set():
                         if self._pause.is_set():
@@ -782,6 +852,8 @@ class MusicController:
         self._cache_dir.mkdir(parents=True, exist_ok=True)
         self.streamer = CloudAudioStreamer(status_cb=self._notify)
         self.on_track_ended: Callable[[], None] | None = None
+        self._output_device_index: int | None = None
+        self._output_device_name: str = ""
 
         if pygame is not None:
             try:
@@ -789,6 +861,39 @@ class MusicController:
                 self._mixer_ok = True
             except Exception:
                 self._mixer_ok = False
+
+    def set_output_device(self, index: int | None, name: str = "") -> None:
+        """User-selected playback device (required for stream; pygame re-inits when possible)."""
+        self._output_device_index = index
+        self._output_device_name = (name or "").strip()
+        self.streamer.set_device(index)
+        if index is None or pygame is None:
+            return
+        bare = self._output_device_name.split("  ·  ")[0].strip() or self._output_device_name
+        was_playing = self._is_playing and not self._paused
+        try:
+            if self._mixer_ok:
+                try:
+                    pygame.mixer.music.stop()
+                except Exception:
+                    pass
+                pygame.mixer.quit()
+            kwargs = dict(frequency=44100, size=-16, channels=2, buffer=2048)
+            try:
+                pygame.mixer.init(**kwargs, devicename=bare)
+            except TypeError:
+                pygame.mixer.init(**kwargs)
+            except Exception:
+                pygame.mixer.init(**kwargs)
+            self._mixer_ok = True
+            pygame.mixer.music.set_volume(self._volume)
+        except Exception:
+            self._mixer_ok = False
+        if was_playing and self._ready:
+            try:
+                self.play()
+            except Exception:
+                pass
 
     def _notify(self, msg: str) -> None:
         self.status_cb(msg)
@@ -1267,6 +1372,9 @@ class MusicController:
             return
         if self._is_playing and not self._paused:
             return
+        if self._output_device_index is None:
+            self._notify("音声出力デバイスを選択してください")
+            return
 
         if not self._ready:
             self._notify("音楽の準備ができていません")
@@ -1436,11 +1544,19 @@ class WaterTimer(ctk.CTk):
         self.temptation_exclude = TemptationExcludeStore(
             app_root() / "data" / "temptation_exclude.json"
         )
-        self.i18n = I18n(app_root() / "data" / "settings.json")
+        settings_path = app_root() / "data" / "settings.json"
+        self.settings = SettingsStore(settings_path)
+        self.i18n = I18n(settings_path)
         self._ffmpeg_path = ensure_bundled_ffmpeg()
         self._exclude_dialog: ctk.CTkToplevel | None = None
+        self._audio_device_map: dict[str, int] = {}
         self.music = MusicController(status_cb=self._on_music_status)
         self.music.on_track_ended = self._on_music_track_ended
+        self._apply_saved_audio_device()
+        self.agiu = AgiuController(
+            status_cb=self._on_agiu_status,
+            on_update_available=self._on_agiu_update_available,
+        )
 
         self.configure(fg_color=self.theme.bg)
         self.setup_ui()
@@ -1449,6 +1565,7 @@ class WaterTimer(ctk.CTk):
         self._refresh_playlist_ui()
         self._refresh_temptation_btn()
         self.apply_language()
+        self._refresh_audio_device_menu()
 
         self.bind("<space>", self._hotkey_space)
         self.bind("<Escape>", self._hotkey_esc)
@@ -1462,6 +1579,8 @@ class WaterTimer(ctk.CTk):
                 text=self.t("temptation_armed_admin")
             ))
         self.after(200, self._report_ffmpeg_status)
+        if self.settings.get("agiu_auto_check", True):
+            self.after(1800, self._agiu_check_silent)
 
     def t(self, key: str, **kwargs) -> str:
         return self.i18n.t(key, **kwargs)
@@ -1476,6 +1595,160 @@ class WaterTimer(ctk.CTk):
     def _on_language_change(self, choice: str) -> None:
         self.i18n.set_lang("en" if str(choice).lower().startswith("en") else "ja")
         self.apply_language()
+
+    def _apply_saved_audio_device(self) -> None:
+        name = str(self.settings.get("audio_output_name") or "")
+        raw_idx = self.settings.get("audio_output_index")
+        idx = None
+        try:
+            if raw_idx is not None and str(raw_idx).strip() != "":
+                idx = int(raw_idx)
+        except (TypeError, ValueError):
+            idx = None
+        resolved = resolve_output_device_index(idx, name)
+        if resolved is not None:
+            devices = list_output_audio_devices()
+            label = next((lab for i, lab in devices if i == resolved), name)
+            self.music.set_output_device(resolved, label or name)
+
+    def _refresh_audio_device_menu(self, preserve: bool = False) -> None:
+        if not hasattr(self, "audio_device_menu"):
+            return
+        pick = self.t("audio_pick")
+        devices = list_output_audio_devices()
+        self._audio_device_map = {lab: i for i, lab in devices}
+        values = [pick] + [lab for _i, lab in devices]
+        if not devices:
+            values = [pick, self.t("audio_none")]
+        current = ""
+        if preserve:
+            try:
+                current = self.audio_device_menu.get()
+            except Exception:
+                current = ""
+        self.audio_device_menu.configure(values=values)
+        saved_name = str(self.settings.get("audio_output_name") or "")
+        saved_idx = self.settings.get("audio_output_index")
+        try:
+            saved_i = int(saved_idx) if saved_idx is not None and str(saved_idx).strip() != "" else None
+        except (TypeError, ValueError):
+            saved_i = None
+        resolved = resolve_output_device_index(saved_i, saved_name)
+        chosen = pick
+        if resolved is not None:
+            for lab, i in self._audio_device_map.items():
+                if i == resolved:
+                    chosen = lab
+                    break
+        elif current and current in values and current != pick:
+            chosen = current
+        self.audio_device_menu.set(chosen)
+        if chosen != pick and chosen in self._audio_device_map:
+            self.music.set_output_device(self._audio_device_map[chosen], chosen)
+
+    def _on_audio_device_change(self, choice: str) -> None:
+        pick = self.t("audio_pick")
+        none_lbl = self.t("audio_none")
+        if choice in (pick, none_lbl) or choice not in self._audio_device_map:
+            self.settings.set("audio_output_name", "")
+            self.settings.set("audio_output_index", None)
+            self.music.set_output_device(None, "")
+            self._on_music_status(self.t("audio_need_pick"))
+            return
+        idx = self._audio_device_map[choice]
+        self.settings.set("audio_output_name", choice)
+        self.settings.set("audio_output_index", idx)
+        self.music.set_output_device(idx, choice)
+        self._on_music_status(self.t("audio_selected", name=choice.split("  ·  ")[0][:40]))
+
+    def _on_agiu_auto_toggle(self) -> None:
+        on = bool(self.agiu_auto_sw.get())
+        self.settings.set("agiu_auto_check", on)
+
+    def _on_agiu_status(self, msg: str) -> None:
+        def ui():
+            if hasattr(self, "agiu_status_lbl"):
+                self.agiu_status_lbl.configure(text=msg)
+        self.after(0, ui)
+
+    def _agiu_check_silent(self) -> None:
+        self.agiu.check_async()
+
+    def _agiu_check_manual(self) -> None:
+        self._on_agiu_status(self.t("agiu_checking"))
+        self.agiu.on_update_available = self._on_agiu_update_available
+        # wrap check to show up-to-date dialog
+
+        def worker():
+            self._on_agiu_status(self.t("agiu_checking"))
+            info = fetch_latest_release()
+            if info is None:
+                self._on_agiu_status(self.t("agiu_fail"))
+                self.after(0, lambda: messagebox.showwarning(self.t("agiu_title"), self.t("agiu_fail")))
+                return
+            self.agiu.latest = info
+            if is_newer(info.version, APP_VERSION):
+                self._on_agiu_status(self.t("agiu_available", cur=APP_VERSION, new=info.version))
+                self.after(0, lambda: self._on_agiu_update_available(info))
+            else:
+                self._on_agiu_status(self.t("agiu_uptodate", ver=APP_VERSION))
+                self.after(
+                    0,
+                    lambda: messagebox.showinfo(
+                        self.t("agiu_title"),
+                        self.t("agiu_uptodate", ver=APP_VERSION),
+                    ),
+                )
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _on_agiu_update_available(self, info: ReleaseInfo) -> None:
+        def ui():
+            msg = self.t("agiu_prompt", cur=APP_VERSION, new=info.version, name=info.asset_name)
+            if messagebox.askyesno(self.t("agiu_title"), msg):
+                self._agiu_download_apply(info)
+            else:
+                self._on_agiu_status(self.t("agiu_later", ver=info.version))
+
+        self.after(0, ui)
+
+    def _agiu_download_apply(self, info: ReleaseInfo) -> None:
+        self._on_agiu_status(self.t("agiu_downloading", name=info.asset_name))
+
+        def progress(done: int, total: int) -> None:
+            if total > 0:
+                pct = int(done * 100 / total)
+                self._on_agiu_status(self.t("agiu_progress", pct=pct))
+
+        def worker():
+            try:
+                if not getattr(sys, "frozen", False):
+                    import webbrowser
+
+                    self._on_agiu_status(self.t("agiu_dev_open"))
+                    webbrowser.open(info.html_url or RELEASES_PAGE)
+                    self.after(
+                        0,
+                        lambda: messagebox.showinfo(
+                            self.t("agiu_title"),
+                            self.t("agiu_dev_open"),
+                        ),
+                    )
+                    return
+                self.agiu.download_and_apply(info, progress_cb=progress)
+                self._on_agiu_status(self.t("agiu_restarting"))
+                self.after(400, self.destroy)
+            except Exception as exc:
+                self._on_agiu_status(self.t("agiu_apply_fail", msg=str(exc)[:80]))
+                self.after(
+                    0,
+                    lambda: messagebox.showerror(
+                        self.t("agiu_title"),
+                        self.t("agiu_apply_fail", msg=str(exc)),
+                    ),
+                )
+
+        threading.Thread(target=worker, daemon=True).start()
 
     def _break_tips(self) -> list[str]:
         return [self.t(k) for k in TIP_KEYS]
@@ -1496,6 +1769,8 @@ class WaterTimer(ctk.CTk):
         if hasattr(self, "lang_menu"):
             self.lang_menu.configure(values=[t("lang_ja"), t("lang_en")])
             self.lang_menu.set(t("lang_en") if self.i18n.lang == "en" else t("lang_ja"))
+        if hasattr(self, "audio_device_menu"):
+            self._refresh_audio_device_menu(preserve=True)
         for attr, key in (
             ("sidebar_sub", "app_subtitle"),
             ("sidebar_science", "science_badge"),
@@ -1534,6 +1809,11 @@ class WaterTimer(ctk.CTk):
             ("menu_session_lbl", "session"),
             ("menu_title_lbl", "menu"),
             ("lang_section_lbl", "lang"),
+            ("audio_section_lbl", "audio_out"),
+            ("audio_refresh_btn", "audio_refresh"),
+            ("agiu_section_lbl", "agiu_title"),
+            ("agiu_auto_sw", "agiu_auto"),
+            ("agiu_check_btn", "agiu_check"),
         ):
             w = getattr(self, attr, None)
             if w is not None:
@@ -1541,6 +1821,11 @@ class WaterTimer(ctk.CTk):
                     w.configure(text=t(key))
                 except Exception:
                     pass
+        if hasattr(self, "agiu_version_lbl"):
+            try:
+                self.agiu_version_lbl.configure(text=t("agiu_version", ver=APP_VERSION))
+            except Exception:
+                pass
         if hasattr(self, "entry_intention"):
             try:
                 self.entry_intention.configure(placeholder_text=t("intention_ph"))
@@ -1678,6 +1963,76 @@ class WaterTimer(ctk.CTk):
         )
         self.lang_menu.set(self.t("lang_en") if self.i18n.lang == "en" else self.t("lang_ja"))
         self.lang_menu.pack(padx=14, fill="x")
+
+        self.audio_section_lbl = ctk.CTkLabel(
+            self.sidebar, text=self.t("audio_out"),
+            font=ctk.CTkFont(family=FONT_UI, size=11),
+            text_color=self.theme.muted,
+        )
+        self.audio_section_lbl.pack(pady=(14, 6), padx=16, anchor="w")
+        self.audio_device_menu = ctk.CTkOptionMenu(
+            self.sidebar,
+            values=[self.t("audio_pick")],
+            command=self._on_audio_device_change,
+            fg_color=self.theme.glow,
+            button_color=self.theme.accent,
+            button_hover_color=self.theme.accent_hover,
+            dropdown_fg_color=self.theme.sidebar,
+            font=ctk.CTkFont(family=FONT_UI, size=11),
+            dynamic_resizing=False,
+        )
+        self.audio_device_menu.set(self.t("audio_pick"))
+        self.audio_device_menu.pack(padx=14, fill="x")
+        self.audio_refresh_btn = ctk.CTkButton(
+            self.sidebar, text=self.t("audio_refresh"), height=28,
+            font=ctk.CTkFont(family=FONT_UI, size=11),
+            fg_color="transparent", border_width=1,
+            border_color=self.theme.glow, text_color=self.theme.text,
+            hover_color=self.theme.glow,
+            command=self._refresh_audio_device_menu,
+        )
+        self.audio_refresh_btn.pack(padx=14, fill="x", pady=(6, 0))
+
+        self.agiu_section_lbl = ctk.CTkLabel(
+            self.sidebar, text=self.t("agiu_title"),
+            font=ctk.CTkFont(family=FONT_UI, size=11),
+            text_color=self.theme.muted,
+        )
+        self.agiu_section_lbl.pack(pady=(14, 6), padx=16, anchor="w")
+        self.agiu_version_lbl = ctk.CTkLabel(
+            self.sidebar, text=self.t("agiu_version", ver=APP_VERSION),
+            font=ctk.CTkFont(family=FONT_UI, size=10),
+            text_color=self.theme.muted,
+        )
+        self.agiu_version_lbl.pack(padx=16, anchor="w")
+        self.agiu_auto_sw = ctk.CTkSwitch(
+            self.sidebar, text=self.t("agiu_auto"),
+            font=ctk.CTkFont(family=FONT_UI, size=12),
+            text_color=self.theme.text,
+            progress_color=self.theme.accent,
+            command=self._on_agiu_auto_toggle,
+        )
+        if self.settings.get("agiu_auto_check", True):
+            self.agiu_auto_sw.select()
+        else:
+            self.agiu_auto_sw.deselect()
+        self.agiu_auto_sw.pack(padx=14, pady=(8, 0), anchor="w")
+        self.agiu_check_btn = ctk.CTkButton(
+            self.sidebar, text=self.t("agiu_check"), height=32,
+            font=ctk.CTkFont(family=FONT_UI, size=12),
+            fg_color="transparent", border_width=1,
+            border_color=self.theme.glow, text_color=self.theme.text,
+            hover_color=self.theme.glow,
+            command=self._agiu_check_manual,
+        )
+        self.agiu_check_btn.pack(padx=14, fill="x", pady=(8, 0))
+        self.agiu_status_lbl = ctk.CTkLabel(
+            self.sidebar, text="",
+            font=ctk.CTkFont(size=10),
+            text_color=self.theme.muted,
+            wraplength=170, justify="left",
+        )
+        self.agiu_status_lbl.pack(padx=16, pady=(4, 0), anchor="w")
 
         self.sidebar_focus_lock = ctk.CTkLabel(
             self.sidebar, text=self.t("focus_lock"),
@@ -2354,6 +2709,22 @@ class WaterTimer(ctk.CTk):
             fg_color=theme.glow, button_color=theme.accent,
             button_hover_color=theme.accent_hover, dropdown_fg_color=theme.sidebar,
         )
+        if hasattr(self, "lang_menu"):
+            self.lang_menu.configure(
+                fg_color=theme.glow, button_color=theme.accent,
+                button_hover_color=theme.accent_hover, dropdown_fg_color=theme.sidebar,
+            )
+        if hasattr(self, "audio_device_menu"):
+            self.audio_device_menu.configure(
+                fg_color=theme.glow, button_color=theme.accent,
+                button_hover_color=theme.accent_hover, dropdown_fg_color=theme.sidebar,
+            )
+        if hasattr(self, "audio_refresh_btn"):
+            self.audio_refresh_btn.configure(border_color=theme.glow, hover_color=theme.glow, text_color=theme.text)
+        if hasattr(self, "agiu_check_btn"):
+            self.agiu_check_btn.configure(border_color=theme.glow, hover_color=theme.glow, text_color=theme.text)
+        if hasattr(self, "agiu_auto_sw"):
+            self.agiu_auto_sw.configure(progress_color=theme.accent, text_color=theme.text)
         self.volume_slider.configure(
             progress_color=theme.accent, button_color=theme.accent,
             button_hover_color=theme.accent_hover,
@@ -3658,6 +4029,8 @@ class WaterTimer(ctk.CTk):
 
         self.music.set_url(url)
         self.music.set_volume(float(self.volume_slider.get()))
+        if url and self.music._output_device_index is None:
+            self._on_music_status(self.t("audio_need_pick"))
 
         self.main_container.grid_forget()
         self._setup_visible = False

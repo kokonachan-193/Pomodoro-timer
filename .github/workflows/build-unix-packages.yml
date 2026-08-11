@@ -9,6 +9,8 @@ on:
     paths:
       - "main.py"
       - "i18n.py"
+      - "agiu.py"
+      - "settings_store.py"
       - "requirements.txt"
       - "assets/**"
       - "scripts/build_unix.sh"
