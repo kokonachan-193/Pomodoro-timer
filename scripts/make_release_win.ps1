@@ -1,11 +1,11 @@
 # Build Windows release assets for GitHub Releases (download & run, no build needed)
 # Usage (repo root):  .\scripts\make_release_win.ps1
 # Outputs:
-#   dist\releases\AquaFocus-Windows-Portable-1.0.0.zip
-#   dist\releases\AquaFocusSetup-1.0.0.exe
+#   dist\releases\AquaFocus-Windows-Portable-1.1.0.zip
+#   dist\releases\AquaFocusSetup-1.1.0.exe
 
 $ErrorActionPreference = "Stop"
-$Version = "1.0.0"
+$Version = "1.1.0"
 
 if (-not $PSScriptRoot) { throw "Run as: .\scripts\make_release_win.ps1" }
 $Root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
@@ -26,7 +26,11 @@ $zipPath = Join-Path $relDir $zipName
 if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 
 Write-Host "==> zip portable" -ForegroundColor Cyan
-Compress-Archive -Path (Join-Path $exeDir "*") -DestinationPath $zipPath -CompressionLevel Optimal
+$stage = Join-Path $env:TEMP "AquaFocus-portable-stage-$Version"
+if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
+Copy-Item $exeDir $stage -Recurse -Force
+Compress-Archive -Path (Join-Path $stage "*") -DestinationPath $zipPath -CompressionLevel Optimal -Force
+Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
 
 $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 $setupOut = Join-Path $relDir "AquaFocusSetup-$Version.exe"

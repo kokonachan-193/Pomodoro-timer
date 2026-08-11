@@ -1,32 +1,60 @@
 # Aqua Focus
 
-**[日本語](README.ja.md)**
+<p align="center">
+  <img src="assets/icons/aqua-focus-app.png" alt="Aqua Focus" width="96" />
+</p>
 
-Desktop Pomodoro — timer, focus music, distraction guard.
+<p align="center">
+  <strong>Find your flow.</strong><br />
+  A calm desktop Pomodoro — focus music, distraction guard, planned breaks.
+</p>
 
-**OS:** Windows 11 · Windows 10 · macOS · Ubuntu · Linux
+<p align="center">
+  <a href="README.ja.md">日本語</a>
+  ·
+  <b>v1.1.0</b>
+  ·
+  Windows · macOS · Ubuntu · Linux
+</p>
 
 ---
 
-## Download & run (no build)
+## Get the app
 
-Share the **`downloads/`** folder (or the files inside). Users only download / copy and run.
+No build required. Grab a package from [`downloads/`](downloads/) (or a GitHub Release when published).
 
-| Package | OS | How |
+| Platform | Package | Run |
 | :--- | :--- | :--- |
-| `downloads/Windows/AquaFocusSetup-*.exe` | Windows 10 / 11 | Double-click installer |
-| `downloads/Windows/AquaFocus-Windows-Portable-*.zip` | Windows 10 / 11 | Unzip → `AquaFocus.exe` |
-| `downloads/macOS/AquaFocus-macOS-*.zip` | macOS | Unzip → open `AquaFocus.app` |
-| `downloads/Linux/AquaFocus-Linux-Portable-*.tar.gz` | Ubuntu / Linux | `tar xzf … && ./AquaFocus/AquaFocus` |
+| **Windows 10 / 11** | `AquaFocusSetup-1.1.0.exe` | Installer (recommended) |
+| **Windows** | `AquaFocus-Windows-Portable-1.1.0.zip` | Unzip → `AquaFocus.exe` |
+| **macOS** | `AquaFocus-macOS-1.1.0.zip` | Unzip → `AquaFocus.app` |
+| **Ubuntu / Linux** | `AquaFocus-*-Portable-1.1.0.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
 
-Windows packages are built on Windows. macOS / Linux packages must be produced **once** on that OS:
+ffmpeg is **bundled**. Updates can be checked in-app via **AGIU** (GitHub Releases).
 
-```bash
-./scripts/make_release_unix.sh
-# then copy dist/releases/* into downloads/macOS or downloads/Linux
-```
+> Release notes (EN / JA) for uploaders: [`docs/release/`](docs/release/)
 
-ffmpeg is bundled in packaged builds.
+---
+
+## What’s new in 1.1.0
+
+- **AGIU** — check GitHub Releases and update the installed app (all OS packages)
+- **Audio output** — pick the playback device yourself (no silent auto-select)
+- Cross-platform packages: Windows · macOS · Linux / Ubuntu
+
+---
+
+## Features
+
+| | |
+| :--- | :--- |
+| **Timer** | Science-based presets, short → long breaks, one session intention |
+| **Music** | YouTube / Spotify / direct stream — **work sessions only** |
+| **Focus lock** | Temptation guard (full film on Windows; soft mode on macOS / Linux) |
+| **Language** | 日本語 / English in the sidebar |
+| **Updates** | AGIU · audio device picker |
+
+More detail: [`docs/platforms.md`](docs/platforms.md) · [`docs/learning-science-jp.md`](docs/learning-science-jp.md)
 
 ---
 
@@ -37,10 +65,20 @@ pip install -r requirements.txt
 python main.py          # Windows: py main.py
 ```
 
-See [`docs/platforms.md`](docs/platforms.md).
+### Build packages
 
-## Features
+```powershell
+# Windows
+.\scripts\make_release_win.ps1
+```
 
-- Science presets, long breaks, one intention  
-- Focus music during work only  
-- Temptation guard · English / 日本語 UI  
+```bash
+# macOS or Linux (on that OS)
+./scripts/make_release_unix.sh
+```
+
+---
+
+<p align="center">
+  <sub>Aqua Focus · Kokona · MIT-friendly desktop focus tool</sub>
+</p>

@@ -56,7 +56,7 @@ New-Item -ItemType Directory -Force -Path $outDir, $ubuntuDir | Out-Null
 $tarball = Get-ChildItem (Join-Path $Root "dist\releases\AquaFocus-Linux-Portable-*.tar.gz") | Select-Object -First 1
 if (-not $tarball) { throw "Linux tarball missing" }
 Copy-Item $tarball.FullName $outDir -Force
-Copy-Item $tarball.FullName (Join-Path $ubuntuDir "AquaFocus-Ubuntu-Portable-1.0.0.tar.gz") -Force
+Copy-Item $tarball.FullName (Join-Path $ubuntuDir "AquaFocus-Ubuntu-Portable-1.1.0.tar.gz") -Force
 Remove-Item (Join-Path $outDir "PLACE_PACKAGE_HERE.txt") -ErrorAction SilentlyContinue
 Remove-Item (Join-Path $ubuntuDir "PLACE_PACKAGE_HERE.txt") -ErrorAction SilentlyContinue
 
