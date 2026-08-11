@@ -2,30 +2,36 @@
 
 **[English](README.md)**
 
-PC 向けポモドーロ。タイマー・Focus 音楽・誘惑排除で作業に戻りやすくします。
+PC 向けポモドーロ。タイマー・Focus 音楽・誘惑排除。
 
 **対応 OS:** Windows 11 · Windows 10 · macOS · Ubuntu · Linux
 
 ---
 
-## ダウンロード（ビルド不要）
+## ダウンロードして使う（ビルド不要）
 
-完成版は **[Releases](https://github.com/kokonachan-193/Pomodoro-timer/releases)** から入手できます。落として実行するだけです。
+完成版は **`downloads/`** フォルダを渡すだけでOKです（GitHub 不要）。
 
-| ファイル | 対象 | 使い方 |
+| パッケージ | OS | 使い方 |
 | :--- | :--- | :--- |
-| **`AquaFocusSetup-*.exe`** | Windows 10 / 11 | インストーラを実行 |
-| **`AquaFocus-Windows-x64.zip`** | Windows 10 / 11 | 解凍 → `AquaFocus.exe` |
-| **`AquaFocus-macOS.zip`** | macOS | 解凍 → `AquaFocus.app` を開く |
-| **`AquaFocus-Linux-x64.tar.gz`** | Ubuntu / Linux | 展開 → `./AquaFocus` |
+| `downloads/Windows/AquaFocusSetup-*.exe` | Windows 10 / 11 | インストーラを実行 |
+| `downloads/Windows/AquaFocus-Windows-Portable-*.zip` | Windows 10 / 11 | 解凍 → `AquaFocus.exe` |
+| `downloads/macOS/AquaFocus-macOS-*.zip` | macOS | 解凍 → `AquaFocus.app` |
+| `downloads/Linux/AquaFocus-Linux-Portable-*.tar.gz` | Ubuntu / Linux | `tar xzf … && ./AquaFocus/AquaFocus` |
 
-全パッケージに ffmpeg 同梱。Linux では必要に応じて `sudo apt install libportaudio2 fonts-noto-cjk`。
+Windows 用はこの PC で作成済み。  
+**macOS / Linux 用は、その OS 上で一度だけ**次を実行して `downloads/` に入れてください。
 
-バージョンタグ（`v*`）を push すると GitHub Actions が全 OS 向けに自動ビルドして Releases に載せます。
+```bash
+./scripts/make_release_unix.sh
+# dist/releases/ の成果物を downloads/macOS または downloads/Linux へ
+```
+
+パッケージには ffmpeg 同梱です。
 
 ---
 
-## ソースから起動（開発者向け）
+## ソースから起動
 
 ```bash
 pip install -r requirements.txt
@@ -36,7 +42,6 @@ python main.py          # Windows: py main.py
 
 ## 機能
 
-- 学習科学ベースのプリセット・長休憩・目的1つ  
+- 学習科学プリセット・長休憩・目的1つ  
 - Focus 音楽（作業中のみ）  
-- 誘惑排除（Windows=フィルム / Mac·Linux=前面維持）  
-- 言語: 日本語 / English  
+- 誘惑排除 · 日本語 / English  

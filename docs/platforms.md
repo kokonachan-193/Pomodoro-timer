@@ -58,22 +58,7 @@ python main.py    # Windows: py main.py
 
 ---
 
-## GitHub Releases（推奨・ビルド不要）
-
-タグ `v*` を push すると Actions が次を自動生成して [Releases](https://github.com/kokonachan-193/Pomodoro-timer/releases) に載せます。
-
-| 成果物 | OS |
-| :--- | :--- |
-| `AquaFocusSetup-*.exe` / `AquaFocus-Windows-x64.zip` | Windows 10 / 11 |
-| `AquaFocus-macOS.zip`（`.app`） | macOS |
-| `AquaFocus-Linux-x64.tar.gz` | Ubuntu / Linux |
-
-```bash
-git tag v1.1.0
-git push origin v1.1.0
-```
-
-## ローカルビルド手順
+## ビルド手順
 
 ### Windows 11 / Windows 10
 

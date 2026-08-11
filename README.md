@@ -2,41 +2,45 @@
 
 **[日本語](README.ja.md)**
 
-Desktop Pomodoro for focus work — timer, focus music, distraction guard.
+Desktop Pomodoro — timer, focus music, distraction guard.
 
 **OS:** Windows 11 · Windows 10 · macOS · Ubuntu · Linux
 
 ---
 
-## Download (no build)
+## Download & run (no build)
 
-Get ready-made apps from **[Releases](https://github.com/kokonachan-193/Pomodoro-timer/releases)** — download, then run.
+Share the **`downloads/`** folder (or the files inside). Users only download / copy and run.
 
-| File | Platform | How to use |
+| Package | OS | How |
 | :--- | :--- | :--- |
-| **`AquaFocusSetup-*.exe`** | Windows 10 / 11 | Run the installer |
-| **`AquaFocus-Windows-x64.zip`** | Windows 10 / 11 | Unzip → `AquaFocus.exe` |
-| **`AquaFocus-macOS.zip`** | macOS | Unzip → open `AquaFocus.app` |
-| **`AquaFocus-Linux-x64.tar.gz`** | Ubuntu / Linux | Extract → `./AquaFocus` |
+| `downloads/Windows/AquaFocusSetup-*.exe` | Windows 10 / 11 | Double-click installer |
+| `downloads/Windows/AquaFocus-Windows-Portable-*.zip` | Windows 10 / 11 | Unzip → `AquaFocus.exe` |
+| `downloads/macOS/AquaFocus-macOS-*.zip` | macOS | Unzip → open `AquaFocus.app` |
+| `downloads/Linux/AquaFocus-Linux-Portable-*.tar.gz` | Ubuntu / Linux | `tar xzf … && ./AquaFocus/AquaFocus` |
 
-ffmpeg is bundled in all packages. On Linux you may also want: `sudo apt install libportaudio2 fonts-noto-cjk`.
+Windows packages are built on Windows. macOS / Linux packages must be produced **once** on that OS:
 
-Packages are built automatically by GitHub Actions for every version tag (`v*`).
+```bash
+./scripts/make_release_unix.sh
+# then copy dist/releases/* into downloads/macOS or downloads/Linux
+```
+
+ffmpeg is bundled in packaged builds.
 
 ---
 
-## Run from source (developers)
+## Run from source
 
 ```bash
 pip install -r requirements.txt
 python main.py          # Windows: py main.py
 ```
 
-Details: [`docs/platforms.md`](docs/platforms.md)
+See [`docs/platforms.md`](docs/platforms.md).
 
 ## Features
 
-- Science-based presets, long breaks, one intention  
-- Focus music (YouTube / Spotify / stream) during work only  
-- Temptation guard (Windows film / Mac·Linux stay-on-top)  
-- UI language: English / 日本語  
+- Science presets, long breaks, one intention  
+- Focus music during work only  
+- Temptation guard · English / 日本語 UI  

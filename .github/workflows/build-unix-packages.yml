@@ -1,0 +1,67 @@
+# Build Aqua Focus packages (artifacts only — not published to Releases)
+# Linux + macOS. Download zip from Actions → put into downloads/
+
+name: build-unix-packages
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "main.py"
+      - "i18n.py"
+      - "requirements.txt"
+      - "assets/**"
+      - "scripts/build_unix.sh"
+      - "scripts/make_release_unix.sh"
+      - ".github/workflows/build-unix-packages.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Linux portable
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: System deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk libportaudio2 portaudio19-dev
+
+      - name: Build package
+        run: |
+          chmod +x scripts/build_unix.sh scripts/make_release_unix.sh
+          ./scripts/make_release_unix.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AquaFocus-Linux-Portable
+          path: dist/releases/AquaFocus-Linux-Portable-*.tar.gz
+          if-no-files-found: error
+
+  macos:
+    name: macOS app zip
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build package
+        run: |
+          chmod +x scripts/build_unix.sh scripts/make_release_unix.sh
+          ./scripts/make_release_unix.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AquaFocus-macOS
+          path: dist/releases/AquaFocus-macOS-*.zip
+          if-no-files-found: error
