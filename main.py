@@ -1717,6 +1717,7 @@ class WaterTimer(ctk.CTk):
         # compatibility, but the feature-complete dashboard is now primary.
         self._v3_focus = False
         self._polish_full_dashboard()
+        self._curate_dashboard()
 
         self.bind("<space>", self._hotkey_space)
         self.bind("<Escape>", self._hotkey_esc)
@@ -2824,6 +2825,97 @@ class WaterTimer(ctk.CTk):
             self.start_btn.configure(height=46, corner_radius=12)
         except Exception:
             pass
+
+    def _curate_dashboard(self):
+        """Keep the high-value parts visible and remove low-value visual noise.
+
+        Aqua Focus should be simple, not empty.  The default surface keeps the
+        animated atmosphere, focus choices, intention, timing, music selection
+        and the primary action.  Explanatory / duplicate material is hidden.
+        """
+        # Keep OceanHero: motion/atmosphere is part of the product identity.
+        try:
+            self.ocean_hero.configure(height=132)
+            self.ocean_hero.pack_configure(pady=(0, 12))
+        except Exception:
+            pass
+
+        # These science cards explain decisions but do not help start a session.
+        # They remain constructed for compatibility/localization, just not shown
+        # on the default dashboard.
+        for widget in (
+            getattr(self, "science_row", None),
+            getattr(self, "science_note", None),
+        ):
+            if widget is not None:
+                try:
+                    widget.pack_forget()
+                except Exception:
+                    pass
+
+        # Keep Quick Dive visible: mode choice is a frequent, meaningful action.
+        try:
+            self.mode_launcher.pack_configure(pady=(0, 12))
+        except Exception:
+            pass
+
+        # Keep intention + rhythm + raw timing values.  Custom timing is useful
+        # enough that it should not require opening a secondary window.
+        for widget in (
+            getattr(self, "intention_panel", None),
+            getattr(self, "rhythm_panel", None),
+            getattr(self, "inputs_row", None),
+        ):
+            if widget is not None:
+                try:
+                    widget.pack_configure(pady=(0, 10))
+                except Exception:
+                    pass
+
+        # Music is a first-class feature, not an advanced setting.  Preserve URL
+        # entry, playlist add, volume, now-playing preview and status.
+        try:
+            self.music_panel.pack_configure(pady=(2, 12))
+            self.music_title_lbl.configure(text=self.t("focus_music"))
+            self.music_hint_lbl.configure(wraplength=720)
+            self.add_playlist_btn.pack_configure()
+            self.playlist_count_label.pack_configure()
+            self.music_status_label.pack_configure()
+            self.now_preview.pack_configure()
+        except Exception:
+            pass
+
+        # The main action remains obvious, but preload is secondary and can be
+        # visually quieter without being removed.
+        try:
+            self.preload_btn.configure(
+                height=42,
+                width=122,
+                fg_color="transparent",
+                border_width=1,
+                border_color=self.theme.glow,
+            )
+            self.start_btn.configure(
+                height=48,
+                corner_radius=13,
+                font=ctk.CTkFont(family=FONT_UI_BOLD, size=16),
+            )
+        except Exception:
+            pass
+
+        # Reduce sidebar noise without deleting functionality.  Detailed updater
+        # status/hints are hidden; the actual controls stay available.
+        for widget in (
+            getattr(self, "sidebar_science", None),
+            getattr(self, "temptation_hint", None),
+            getattr(self, "agiu_status_lbl", None),
+            getattr(self, "bg_label", None),
+        ):
+            if widget is not None:
+                try:
+                    widget.pack_forget()
+                except Exception:
+                    pass
 
     def _compact_input(self, parent, label_key: str, default: str, col: int) -> ctk.CTkEntry:
         box = ctk.CTkFrame(parent, fg_color="transparent")
