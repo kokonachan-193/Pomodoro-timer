@@ -2,24 +2,6 @@ name: build-and-release
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - "main.py"
-      - "v2_experience.py"
-      - "v2_workspace.py"
-      - "v2_minimal.py"
-      - "extensions/**"
-      - "docs/release/**"
-      - "i18n.py"
-      - "agiu.py"
-      - "settings_store.py"
-      - "requirements.txt"
-      - "assets/**"
-      - "scripts/**"
-      - "installer/**"
-      - "aqua_focus.spec"
-      - ".github/workflows/build-unix-packages.yml"
 
 permissions:
   contents: write
