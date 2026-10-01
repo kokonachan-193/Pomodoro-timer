@@ -53,6 +53,7 @@ except ImportError:  # pragma: no cover
 
 from i18n import I18n, PRESET_KEYS, TIP_KEYS, QUOTE_KEYS
 from settings_store import SettingsStore
+from v2_experience import OceanHero, AuxiliaryModes
 from agiu import (
     APP_VERSION,
     AgiuController,
@@ -1658,6 +1659,7 @@ class WaterTimer(ctk.CTk):
         settings_path = app_root() / "data" / "settings.json"
         self.settings = SettingsStore(settings_path)
         self.i18n = I18n(settings_path)
+        self.reduce_motion = bool(self.settings.get("reduce_motion", False))
         self._ffmpeg_path = ensure_bundled_ffmpeg()
         self._exclude_dialog: ctk.CTkToplevel | None = None
         self._audio_device_map: dict[str, int] = {}
@@ -1667,6 +1669,11 @@ class WaterTimer(ctk.CTk):
         self.agiu = AgiuController(
             status_cb=self._on_agiu_status,
             on_update_available=self._on_agiu_update_available,
+        )
+        self.v2_modes = AuxiliaryModes(
+            self,
+            theme_getter=lambda: self.theme,
+            font_family=FONT_UI,
         )
 
         self.configure(fg_color=self.theme.bg)
@@ -2226,6 +2233,18 @@ class WaterTimer(ctk.CTk):
         self.theme_menu.set(self.theme.name)
         self.theme_menu.pack(padx=14, fill="x")
 
+        self.reduce_motion_sw = ctk.CTkSwitch(
+            self.sidebar,
+            text="Reduce Motion",
+            font=ctk.CTkFont(family=FONT_UI, size=11),
+            text_color=self.theme.text,
+            progress_color=self.theme.accent,
+            command=self._toggle_reduce_motion,
+        )
+        if self.reduce_motion:
+            self.reduce_motion_sw.select()
+        self.reduce_motion_sw.pack(padx=14, pady=(9, 0), anchor="w")
+
         self.sidebar_bg = ctk.CTkLabel(
             self.sidebar, text=self.t("background"),
             font=ctk.CTkFont(family=FONT_UI, size=11),
@@ -2281,6 +2300,63 @@ class WaterTimer(ctk.CTk):
             wraplength=520, justify="left",
         )
         self.hero_sub.pack(anchor="w", pady=(0, 12))
+
+        # Aqua Focus v2: animated deep-sea home hero.
+        self.ocean_hero = OceanHero(
+            self.setup_frame,
+            theme_getter=lambda: self.theme,
+            reduce_motion_getter=lambda: self.reduce_motion,
+            font_family=FONT_UI,
+            height=145,
+        )
+        self.ocean_hero.pack(fill="x", pady=(0, 12))
+
+        self.mode_launcher = ctk.CTkFrame(
+            self.setup_frame,
+            fg_color=self.theme.sidebar,
+            corner_radius=20,
+            border_width=1,
+            border_color=self.theme.glow,
+        )
+        self.mode_launcher.pack(fill="x", pady=(0, 14))
+        mode_head = ctk.CTkFrame(self.mode_launcher, fg_color="transparent")
+        mode_head.pack(fill="x", padx=16, pady=(13, 8))
+        ctk.CTkLabel(
+            mode_head,
+            text="QUICK DIVE",
+            font=ctk.CTkFont(family=FONT_UI_BOLD, size=12),
+            text_color=self.theme.accent,
+        ).pack(side="left")
+        ctk.CTkLabel(
+            mode_head,
+            text="Choose how you want to focus",
+            font=ctk.CTkFont(family=FONT_UI, size=11),
+            text_color=self.theme.muted,
+        ).pack(side="right")
+
+        mode_row = ctk.CTkFrame(self.mode_launcher, fg_color="transparent")
+        mode_row.pack(fill="x", padx=12, pady=(0, 12))
+        self.v2_mode_buttons = []
+        mode_specs = [
+            ("Focus", self.start_immersive_timer, self.theme.accent),
+            ("Deep Dive", self.start_deep_dive_mode, self.theme.wave_front_break),
+            ("Countdown", self.v2_modes.open_countdown, self.theme.glow),
+            ("Stopwatch", self.v2_modes.open_stopwatch, self.theme.glow),
+            ("Alarm", self.v2_modes.open_alarm, "#8a6a20"),
+        ]
+        for label, command, color in mode_specs:
+            btn = ctk.CTkButton(
+                mode_row,
+                text=label,
+                height=40,
+                corner_radius=14,
+                fg_color=color,
+                hover_color=self.theme.accent_hover,
+                font=ctk.CTkFont(family=FONT_UI_BOLD, size=11),
+                command=command,
+            )
+            btn.pack(side="left", fill="x", expand=True, padx=4)
+            self.v2_mode_buttons.append(btn)
 
         self.science_row = ctk.CTkFrame(self.setup_frame, fg_color="transparent")
         self.science_row.pack(fill="x", pady=(0, 12))
@@ -4121,6 +4197,36 @@ class WaterTimer(ctk.CTk):
         self._refresh_rhythm_preview()
         self._pulse_widget(self.start_btn)
 
+    def _toggle_reduce_motion(self):
+        self.reduce_motion = bool(self.reduce_motion_sw.get())
+        self.settings.set("reduce_motion", self.reduce_motion)
+        try:
+            self.hero_sub.configure(
+                text="Reduced motion enabled" if self.reduce_motion else self.t("hero_sub_default")
+            )
+        except Exception:
+            pass
+
+    def start_deep_dive_mode(self):
+        """90-minute low-distraction focus session using the existing immersive player."""
+        self._calm_focus = True
+        try:
+            self.calm_var.set(True)
+        except Exception:
+            pass
+        self.set_preset(
+            90,
+            20,
+            "Deep Dive",
+            long_break=20,
+            long_every=1,
+            cycles=1,
+            blurb="One long, quiet block with minimal chrome.",
+            key="deep-dive",
+        )
+        self.hero_sub.configure(text="Deep Dive · 90 minutes · distractions fade away")
+        self.after(90, self.start_immersive_timer)
+
     def start_immersive_timer(self):
         try:
             self.work_time = float(self.entry_work.get()) * 60
@@ -4421,9 +4527,10 @@ class WaterTimer(ctk.CTk):
 
     def _ambient_loop(self):
         """Keep subtle motion on setup / paused screens."""
-        self._ui_pulse += 0.08
-        self.phase_glow += 0.04
-        self._eq_seed += 0.12
+        motion = 0.0 if self.reduce_motion else 1.0
+        self._ui_pulse += 0.08 * motion
+        self.phase_glow += 0.04 * motion
+        self._eq_seed += 0.12 * motion
         if self.wave_frame.winfo_ismapped() and (self.is_paused or not self.is_running):
             self.draw_waves(frozen=True)
         if self._setup_visible:
