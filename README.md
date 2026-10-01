@@ -39,6 +39,8 @@ ffmpeg is **bundled**. Updates can be checked in-app via **AGIU** (GitHub Releas
 ## What’s new in 1.2.0
 
 - **AGIU** — check GitHub Releases and update the installed app (all OS packages)
+- **Music reliability** — YouTube/Spotify playback preserves required HTTP headers and falls back cleanly when streaming fails
+- **Modernized UI** — scrollable settings/sidebar, roomier layout, better small-screen usability
 - **Audio output** — uses the OS default automatically when no device is selected
 - Cross-platform packages: Windows · macOS · Linux / Ubuntu
 
