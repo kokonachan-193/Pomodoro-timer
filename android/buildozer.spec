@@ -4,7 +4,7 @@ package.name = aquafocus
 package.domain = com.kokonachan
 source.dir = .
 source.include_exts = py,png,jpg,kv,json
-version = 2.1.1
+version = 2.1.2
 requirements = python3==3.11.9,hostpython3==3.11.9,kivy==2.3.1,pyjnius,yt-dlp,plyer
 orientation = portrait
 fullscreen = 0
