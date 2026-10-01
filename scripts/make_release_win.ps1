@@ -1,11 +1,11 @@
 # Build Windows release assets for GitHub Releases (download & run, no build needed)
 # Usage (repo root):  .\scripts\make_release_win.ps1
 # Outputs:
-#   dist\releases\AquaFocus-Windows-Portable-2.1.2.zip
-#   dist\releases\AquaFocusSetup-2.1.2.exe
+#   dist\releases\AquaFocus-Windows-Portable-2.1.3.zip
+#   dist\releases\AquaFocusSetup-2.1.3.exe
 
 $ErrorActionPreference = "Stop"
-$Version = "2.1.2"
+$Version = "2.1.3"
 
 if (-not $PSScriptRoot) { throw "Run as: .\scripts\make_release_win.ps1" }
 $Root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
