@@ -1696,6 +1696,8 @@ class WaterTimer(ctk.CTk):
         self._refresh_temptation_btn()
         self.apply_language()
         self._refresh_audio_device_menu()
+        # Replace the legacy dashboard with the progressive-disclosure shell.
+        self.minimal_shell.install()
 
         self.bind("<space>", self._hotkey_space)
         self.bind("<Escape>", self._hotkey_esc)
@@ -4361,6 +4363,9 @@ class WaterTimer(ctk.CTk):
         self._animate_enter()
 
     def _place_secondary_chrome(self):
+        if getattr(self, "_v3_focus", False):
+            self.minimal_shell.place_focus_chrome()
+            return
         try:
             self.menu_btn.place(relx=0.97, rely=0.035, anchor="ne")
             self.menu_btn.lift()
@@ -4664,6 +4669,9 @@ class WaterTimer(ctk.CTk):
         self.canvas.create_oval(mx-3, my-3, mx+3, my+3, fill=color, outline="")
 
     def draw_waves(self, frozen: bool = False):
+        if getattr(self, "_v3_focus", False):
+            self.minimal_shell.draw_focus_canvas(frozen=frozen)
+            return
         self.canvas.delete("all")
         w = self.canvas.winfo_width()
         h = self.canvas.winfo_height()
