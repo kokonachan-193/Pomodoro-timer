@@ -14,7 +14,7 @@
   ·
   <b>v1.2.0</b>
   ·
-  Windows · macOS · Ubuntu · Linux
+  Windows · macOS · Ubuntu · Linux · Android
 </p>
 
 ---
@@ -29,6 +29,7 @@ No build required. Grab a package from [`downloads/`](downloads/) (or a GitHub R
 | **Windows** | `AquaFocus-Windows-Portable-1.2.0.zip` | Unzip → `AquaFocus.exe` |
 | **macOS** | `AquaFocus-macOS-1.2.0.zip` | Unzip → `AquaFocus.app` |
 | **Ubuntu / Linux** | `AquaFocus-*-Portable-1.2.0.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
+| **Android 8+** | `AquaFocus-Android-1.2.0.apk` | Install APK on your Android device |
 
 ffmpeg is **bundled**. Updates can be checked in-app via **AGIU** (GitHub Releases).
 
