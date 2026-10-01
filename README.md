@@ -12,7 +12,7 @@
 <p align="center">
   <a href="README.ja.md">日本語</a>
   ·
-  <b>v1.1.0</b>
+  <b>v1.2.0</b>
   ·
   Windows · macOS · Ubuntu · Linux
 </p>
@@ -25,10 +25,10 @@ No build required. Grab a package from [`downloads/`](downloads/) (or a GitHub R
 
 | Platform | Package | Run |
 | :--- | :--- | :--- |
-| **Windows 10 / 11** | `AquaFocusSetup-1.1.0.exe` | Installer (recommended) |
-| **Windows** | `AquaFocus-Windows-Portable-1.1.0.zip` | Unzip → `AquaFocus.exe` |
-| **macOS** | `AquaFocus-macOS-1.1.0.zip` | Unzip → `AquaFocus.app` |
-| **Ubuntu / Linux** | `AquaFocus-*-Portable-1.1.0.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
+| **Windows 10 / 11** | `AquaFocusSetup-1.2.0.exe` | Installer (recommended) |
+| **Windows** | `AquaFocus-Windows-Portable-1.2.0.zip` | Unzip → `AquaFocus.exe` |
+| **macOS** | `AquaFocus-macOS-1.2.0.zip` | Unzip → `AquaFocus.app` |
+| **Ubuntu / Linux** | `AquaFocus-*-Portable-1.2.0.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
 
 ffmpeg is **bundled**. Updates can be checked in-app via **AGIU** (GitHub Releases).
 
@@ -36,10 +36,10 @@ ffmpeg is **bundled**. Updates can be checked in-app via **AGIU** (GitHub Releas
 
 ---
 
-## What’s new in 1.1.0
+## What’s new in 1.2.0
 
 - **AGIU** — check GitHub Releases and update the installed app (all OS packages)
-- **Audio output** — pick the playback device yourself (no silent auto-select)
+- **Audio output** — uses the OS default automatically when no device is selected
 - Cross-platform packages: Windows · macOS · Linux / Ubuntu
 
 ---
