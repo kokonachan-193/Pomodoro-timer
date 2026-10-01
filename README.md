@@ -12,7 +12,7 @@
 <p align="center">
   <a href="README.ja.md">日本語</a>
   ·
-  <b>v2.1.2</b>
+  <b>v2.1.3</b>
   ·
   Windows · macOS · Ubuntu · Linux · Android
 </p>
@@ -25,26 +25,24 @@ No build required. Download the package for your platform from the GitHub Releas
 
 | Platform | Package | Run |
 | :--- | :--- | :--- |
-| **Windows 10 / 11** | `AquaFocusSetup-2.1.2.exe` | Installer · recommended |
-| **Windows** | `AquaFocus-Windows-Portable-2.1.2.zip` | Unzip → `AquaFocus.exe` |
-| **macOS** | `AquaFocus-macOS-2.1.2.zip` | Unzip → `AquaFocus.app` |
-| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.1.2.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
-| **Android 8+** | `AquaFocus-Android-2.1.2.apk` | Install the APK |
+| **Windows 10 / 11** | `AquaFocusSetup-2.1.3.exe` | Installer · recommended |
+| **Windows** | `AquaFocus-Windows-Portable-2.1.3.zip` | Unzip → `AquaFocus.exe` |
+| **macOS** | `AquaFocus-macOS-2.1.3.zip` | Unzip → `AquaFocus.app` |
+| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.1.3.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
+| **Android 8+** | `AquaFocus-Android-2.1.3.apk` | Install the APK |
 
 ffmpeg is **bundled** on desktop. Existing desktop installs can check GitHub Releases through **AGIU**.
 
 ---
 
-## What’s new in 2.1.2
+## What’s new in 2.1.3
 
-- **Fixed duplicated Home surfaces** — the clean Home is created exactly once; theme changes can no longer stack a second colored Home underneath it
-- **Idempotent UI mounting** — stale Home frames are removed before rebuilding, preventing ghost / split-screen layouts
-- **Real responsive breakpoints** — Compact, Normal, Wide and Ultra layouts adapt card width, spacing and typography to both small windows and large monitors
-- **Feature access restored** — Tasks, Stats, Extensions, Music Library, Soundscape, Countdown, Stopwatch, Alarm and Custom Session are all available from `…`
-- **Settings restored** — Theme, Reduce Motion, background image, language, audio output, Focus Lock, exclusions and updater controls are available without crowding Home
-- **Full controls escape hatch** — every legacy control remains available from `… → Full controls`
-- **Music library UI** — add, play and remove playlist tracks without reopening the old dashboard
-- **Cleaner large-screen scaling** — the focus card and timer grow moderately on wide / ultra-wide displays instead of looking tiny in the middle
+- **Full dashboard restored** — the feature-complete Aqua Focus home is the default again instead of the overly sparse minimal shell
+- **Features stay visible** — Quick Dive, timer rhythm, custom timing, intention, music, playlist controls, volume and primary actions remain directly accessible
+- **Restrained visual polish** — spacing, card radii, borders, typography and button proportions are cleaned up without making the app empty
+- **Sidebar restored** — workspace, language, audio output, updater, Focus Lock, presets, theme and background controls remain available
+- **Minimal-shell crash fix retained** — the previous CTkEntry lifecycle fix remains in the codebase, so legacy widgets are no longer destroyed underneath timer logic
+- **Focus modes preserved** — Focus, Deep Dive, Countdown, Stopwatch and Alarm continue to work from the main interface
 
 ### Carried forward from 2.0.0
 
