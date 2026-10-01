@@ -5491,7 +5491,7 @@ if __name__ == "__main__":
             if "x" in size.lower():
                 sw, sh = size.lower().split("x", 1)
                 sw_i, sh_i = max(500, int(sw)), max(500, int(sh))
-                app.geometry(f"{sw_i}x{sh_i}")
+                app.geometry(f"{sw_i}x{sh_i}+0+0")
                 app.update_idletasks()
                 app.after(80, app._apply_dashboard_layout)
 
