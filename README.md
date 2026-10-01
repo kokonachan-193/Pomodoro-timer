@@ -12,7 +12,7 @@
 <p align="center">
   <a href="README.ja.md">日本語</a>
   ·
-  <b>v2.0.0</b>
+  <b>v2.1.0</b>
   ·
   Windows · macOS · Ubuntu · Linux · Android
 </p>
@@ -25,17 +25,27 @@ No build required. Download the package for your platform from the GitHub Releas
 
 | Platform | Package | Run |
 | :--- | :--- | :--- |
-| **Windows 10 / 11** | `AquaFocusSetup-2.0.0.exe` | Installer · recommended |
-| **Windows** | `AquaFocus-Windows-Portable-2.0.0.zip` | Unzip → `AquaFocus.exe` |
-| **macOS** | `AquaFocus-macOS-2.0.0.zip` | Unzip → `AquaFocus.app` |
-| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.0.0.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
-| **Android 8+** | `AquaFocus-Android-2.0.0.apk` | Install the APK |
+| **Windows 10 / 11** | `AquaFocusSetup-2.1.0.exe` | Installer · recommended |
+| **Windows** | `AquaFocus-Windows-Portable-2.1.0.zip` | Unzip → `AquaFocus.exe` |
+| **macOS** | `AquaFocus-macOS-2.1.0.zip` | Unzip → `AquaFocus.app` |
+| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.1.0.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
+| **Android 8+** | `AquaFocus-Android-2.1.0.apk` | Install the APK |
 
 ffmpeg is **bundled** on desktop. Existing desktop installs can check GitHub Releases through **AGIU**.
 
 ---
 
-## What’s new in 2.0.0
+## What’s new in 2.1.0
+
+- **Attention-first Home** — one task, one duration, one primary Start action
+- **Focus view rebuilt** — timer + thin progress ring + current intention; controls auto-hide
+- **Progressive disclosure** — Sound, tools and advanced settings stay out of the default path
+- **Abyss Glass** — quieter deep-sea palette with fewer competing colors
+- **No urgency pulse** — the last 10 seconds no longer animate aggressively
+- **State-safe theming** — task and duration choices survive appearance changes
+- **Android redesign** — same one-task / one-session hierarchy on mobile
+
+### Carried forward from 2.0.0
 
 - **Deep Sea UI** — animated caustic light, bubbles, glass-like cards and a calmer visual hierarchy
 - **Quick Dive** — Focus, Deep Dive, Countdown, Stopwatch and Alarm from one launcher
