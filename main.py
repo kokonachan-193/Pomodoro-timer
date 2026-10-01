@@ -1711,8 +1711,12 @@ class WaterTimer(ctk.CTk):
         self._refresh_temptation_btn()
         self.apply_language()
         self._refresh_audio_device_menu()
-        # Replace the legacy dashboard with the progressive-disclosure shell.
-        self.minimal_shell.install()
+        # Keep the full dashboard as the default experience.  The previous
+        # minimal-shell experiment hid too much useful context and made Aqua
+        # Focus feel empty.  We keep MinimalShell available in the codebase for
+        # compatibility, but the feature-complete dashboard is now primary.
+        self._v3_focus = False
+        self._polish_full_dashboard()
 
         self.bind("<space>", self._hotkey_space)
         self.bind("<Escape>", self._hotkey_esc)
@@ -2730,6 +2734,96 @@ class WaterTimer(ctk.CTk):
         self.canvas.bind("<Motion>", self._reveal_chrome)
         self.wave_frame.bind("<Motion>", self._reveal_chrome)
 
+
+    def _polish_full_dashboard(self):
+        """Light visual cleanup for the feature-complete dashboard.
+
+        This deliberately avoids a 'minimal redesign': controls stay visible,
+        while spacing, borders, hierarchy and proportions become calmer.
+        """
+        try:
+            self.sidebar.configure(
+                width=244,
+                corner_radius=16,
+                border_width=1,
+                border_color=self.theme.glow,
+            )
+        except Exception:
+            pass
+        try:
+            self.setup_frame.pack_configure(padx=(14, 12), pady=12)
+        except Exception:
+            pass
+        try:
+            self.hero_label.configure(
+                font=ctk.CTkFont(family=FONT_UI_BOLD, size=32)
+            )
+            self.hero_label.pack_configure(pady=(18, 4))
+            self.hero_sub.configure(
+                font=ctk.CTkFont(family=FONT_UI, size=13),
+                wraplength=820,
+            )
+            self.hero_sub.pack_configure(pady=(0, 10))
+        except Exception:
+            pass
+        try:
+            self.ocean_hero.configure(height=122)
+            self.ocean_hero.pack_configure(pady=(0, 10))
+        except Exception:
+            pass
+
+        # One shared visual language for the main cards.  Keep all information
+        # and actions; only reduce the older 'stack of unrelated boxes' feel.
+        for panel in (
+            getattr(self, "mode_launcher", None),
+            getattr(self, "intention_panel", None),
+            getattr(self, "rhythm_panel", None),
+            getattr(self, "inputs_row", None),
+            getattr(self, "music_panel", None),
+        ):
+            if panel is None:
+                continue
+            try:
+                panel.configure(
+                    corner_radius=14,
+                    border_width=1,
+                    border_color=self.theme.glow,
+                )
+            except Exception:
+                pass
+
+        # Quick modes remain prominent, but no longer dominate the whole page.
+        for btn in getattr(self, "v2_mode_buttons", []):
+            try:
+                btn.configure(
+                    height=50,
+                    corner_radius=12,
+                    font=ctk.CTkFont(family=FONT_UI_BOLD, size=11),
+                )
+            except Exception:
+                pass
+
+        # Inputs and primary actions should feel modern without oversized chrome.
+        for entry in (
+            getattr(self, "entry_intention", None),
+            getattr(self, "entry_music", None),
+            getattr(self, "entry_work", None),
+            getattr(self, "entry_break", None),
+            getattr(self, "entry_cycles", None),
+            getattr(self, "entry_long_break", None),
+            getattr(self, "entry_long_every", None),
+        ):
+            if entry is None:
+                continue
+            try:
+                entry.configure(corner_radius=10, border_width=1)
+            except Exception:
+                pass
+        try:
+            self.preload_btn.configure(height=42, corner_radius=12)
+            self.start_btn.configure(height=46, corner_radius=12)
+        except Exception:
+            pass
 
     def _compact_input(self, parent, label_key: str, default: str, col: int) -> ctk.CTkEntry:
         box = ctk.CTkFrame(parent, fg_color="transparent")
