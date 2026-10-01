@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: aqua-focus-android-1.2.0
+  group: aqua-focus-android-2.0.0
   cancel-in-progress: true
 
 jobs:
@@ -54,21 +54,21 @@ jobs:
           mkdir -p dist/android
           APK="$(find android/bin -maxdepth 1 -type f -name '*.apk' | head -n 1)"
           test -n "$APK"
-          cp "$APK" dist/android/AquaFocus-Android-1.2.0.apk
-          ls -lh dist/android/AquaFocus-Android-1.2.0.apk
+          cp "$APK" dist/android/AquaFocus-Android-2.0.0.apk
+          ls -lh dist/android/AquaFocus-Android-2.0.0.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: AquaFocus-Android-1.2.0
-          path: dist/android/AquaFocus-Android-1.2.0.apk
+          name: AquaFocus-Android-2.0.0
+          path: dist/android/AquaFocus-Android-2.0.0.apk
           if-no-files-found: error
 
-      - name: Attach APK to v1.2.0 release
+      - name: Attach APK to v2.0.0 release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.2.0
+          tag_name: v2.0.0
           target_commitish: main
-          name: Aqua Focus v1.2.0
+          name: Aqua Focus v2.0.0
           make_latest: true
           fail_on_unmatched_files: true
-          files: dist/android/AquaFocus-Android-1.2.0.apk
+          files: dist/android/AquaFocus-Android-2.0.0.apk
