@@ -5434,4 +5434,21 @@ class WaterTimer(ctk.CTk):
 if __name__ == "__main__":
     enable_windows_dpi_awareness()
     app = WaterTimer()
+
+    # Preview-only sizing hook used by CI screenshot capture. Normal launches are
+    # unchanged; this merely lets us verify responsive layouts before release.
+    try:
+        import sys
+        if "--preview-size" in sys.argv:
+            idx = sys.argv.index("--preview-size")
+            size = sys.argv[idx + 1]
+            if "x" in size.lower():
+                sw, sh = size.lower().split("x", 1)
+                sw_i, sh_i = max(500, int(sw)), max(500, int(sh))
+                app.geometry(f"{sw_i}x{sh_i}")
+                app.update_idletasks()
+                app.after(80, app._apply_dashboard_layout)
+    except Exception:
+        pass
+
     app.mainloop()
