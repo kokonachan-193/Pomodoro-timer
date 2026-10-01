@@ -48,6 +48,25 @@ class MinimalShell:
         a = self.app
         t = a.theme
 
+        # Idempotent install: a theme refresh or startup path must never leave
+        # two Home surfaces stacked in the same container.
+        if self.surface is not None:
+            try:
+                self.surface.destroy()
+            except Exception:
+                pass
+            self.surface = None
+        try:
+            keep = {getattr(a, "sidebar", None), getattr(a, "setup_frame", None)}
+            for child in list(a.main_container.winfo_children()):
+                if child not in keep:
+                    try:
+                        child.destroy()
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
         # Legacy UI remains alive because timer/audio logic still references it,
         # but it no longer competes with the user.
         for widget in (getattr(a, "sidebar", None), getattr(a, "setup_frame", None)):
@@ -279,24 +298,26 @@ class MinimalShell:
         except Exception:
             return
 
-        narrow = w < 700
-        very_narrow = w < 610
+        compact = w < 700
+        very_compact = w < 610
+        wide = w >= 1250
+        ultra = w >= 1900
         short = h < 620
 
-        outer_x = 12 if very_narrow else (18 if narrow else 30)
-        outer_y = 10 if short else 22
+        outer_x = 12 if very_compact else (18 if compact else (42 if wide else 30))
+        outer_y = 10 if short else (32 if wide else 22)
         try:
             self.shell.pack_configure(padx=outer_x, pady=outer_y)
         except Exception:
             pass
 
-        # At narrow widths the brand and utility actions become two rows instead
+        # At compact widths the brand and utility actions become two rows instead
         # of fighting for the same horizontal pixels.
         if self.top is not None and self.brand is not None and self.top_actions is not None:
             try:
                 self.brand.pack_forget()
                 self.top_actions.pack_forget()
-                if very_narrow:
+                if very_compact:
                     self.top.configure(height=76)
                     self.brand.pack(side="top", anchor="w")
                     self.top_actions.pack(side="bottom", anchor="e")
@@ -309,13 +330,16 @@ class MinimalShell:
 
         # Keep the primary card inside the actual viewport.  A CTkFrame width is
         # otherwise allowed to stay at 660px and gets clipped by a smaller window.
-        card_width = min(660, max(360, w - (outer_x * 2) - 8))
+        target = int(w * (0.52 if compact else (0.42 if wide else 0.48)))
+        max_width = 900 if ultra else (820 if wide else 700)
+        card_width = min(max_width, max(360, target, min(660, w - (outer_x * 2) - 8)))
+        card_width = min(card_width, max(360, w - (outer_x * 2) - 8))
         try:
-            self.focus_card.configure(width=card_width, corner_radius=22 if narrow else 28)
+            self.focus_card.configure(width=card_width, corner_radius=22 if compact else 28)
         except Exception:
             pass
 
-        pad = 22 if very_narrow else (28 if narrow else 34)
+        pad = 22 if very_compact else (28 if compact else (44 if wide else 34))
         for widget in (
             getattr(self, "intent_entry", None),
             getattr(self, "start_button", None),
@@ -333,7 +357,7 @@ class MinimalShell:
         try:
             self.focus_title.configure(font=ctk.CTkFont(
                 family=self.app.FONT_UI_BOLD,
-                size=19 if very_narrow else (21 if narrow else 23),
+                size=19 if very_compact else (21 if compact else (29 if ultra else (26 if wide else 23))),
                 weight="bold",
             ))
         except Exception:
@@ -341,9 +365,26 @@ class MinimalShell:
         try:
             self.duration_label.configure(font=ctk.CTkFont(
                 family=self.app.FONT_UI_BOLD,
-                size=46 if very_narrow else (52 if narrow else 60),
+                size=46 if very_compact else (52 if compact else (78 if ultra else (68 if wide else 60))),
                 weight="bold",
             ))
+        except Exception:
+            pass
+
+        for button in self._top_buttons:
+            try:
+                button.configure(
+                    height=38 if wide else 34,
+                    font=ctk.CTkFont(size=12 if wide else 11),
+                )
+            except Exception:
+                pass
+
+        try:
+            if self.start_button is not None:
+                self.start_button.configure(height=58 if wide else 52)
+            if self.intent_entry is not None:
+                self.intent_entry.configure(height=52 if wide else 48)
         except Exception:
             pass
 
@@ -629,28 +670,162 @@ class MinimalShell:
         t = a.theme
         w = ctk.CTkToplevel(a)
         w.title("Aqua Focus · More")
-        w.geometry("440x500")
-        w.resizable(False, False)
+        w.geometry("520x650")
+        w.minsize(460, 500)
         w.configure(fg_color=t.bg)
-        self._dialog_heading(w, "More", "Tools stay here until you need them.")
 
-        items = (
-            ("Custom session", "Choose your own work / break rhythm", self.open_custom_session),
-            ("Countdown", "A single timer", a.v2_modes.open_countdown),
-            ("Stopwatch", "Open-ended flow", a.v2_modes.open_stopwatch),
-            ("Alarm", "One-time reminder", a.v2_modes.open_alarm),
-            ("Extensions", "Themes and presets", a.workspace.open_extensions),
-            ("Prepare music", "Resolve a stream before focus", a.preload_music),
+        body = ctk.CTkScrollableFrame(w, fg_color="transparent")
+        body.pack(fill="both", expand=True, padx=10, pady=10)
+        self._dialog_heading(body, "More", "All features stay available without crowding Home.")
+
+        groups = (
+            ("FOCUS TOOLS", (
+                ("Custom session", "Choose your own work / break rhythm", self.open_custom_session),
+                ("Countdown", "A single timer", a.v2_modes.open_countdown),
+                ("Stopwatch", "Open-ended flow", a.v2_modes.open_stopwatch),
+                ("Alarm", "One-time reminder", a.v2_modes.open_alarm),
+            )),
+            ("WORKSPACE", (
+                ("Tasks", "Plan and track focused minutes", a.workspace.open_tasks),
+                ("Stats", "Today, week and recent sessions", a.workspace.open_stats),
+                ("Extensions", "Themes, sounds and presets", a.workspace.open_extensions),
+            )),
+            ("MUSIC & SOUND", (
+                ("Music library", "Playlist, add, play and remove tracks", self.open_music_library),
+                ("Ambient sound", "Ocean, rain and brown noise", a.workspace.open_soundscape),
+                ("Prepare music", "Resolve a stream before focus", a.preload_music),
+            )),
+            ("ADVANCED", (
+                ("Full controls", "Open every legacy control in one place", self.open_advanced_workspace),
+                ("Settings", "Appearance, audio, focus lock, language and updates", self.open_settings),
+            )),
         )
-        for name, sub, command in items:
-            card = ctk.CTkButton(
-                w, text=f"{name}\n{sub}", height=56, corner_radius=16,
-                fg_color=t.sidebar, hover_color=t.glow,
-                border_width=1, border_color=t.glow,
-                text_color=t.text, anchor="w",
-                font=ctk.CTkFont(size=11), command=command,
+        for group, items in groups:
+            self._section(body, group)
+            for name, sub, command in items:
+                card = ctk.CTkButton(
+                    body, text=f"{name}\n{sub}", height=56, corner_radius=16,
+                    fg_color=t.sidebar, hover_color=t.glow,
+                    border_width=1, border_color=t.glow,
+                    text_color=t.text, anchor="w",
+                    font=ctk.CTkFont(size=11), command=command,
+                )
+                card.pack(fill="x", padx=12, pady=4)
+
+    def open_music_library(self):
+        a = self.app
+        t = a.theme
+        w = ctk.CTkToplevel(a)
+        w.title("Aqua Focus · Music library")
+        w.geometry("620x560")
+        w.minsize(520, 440)
+        w.configure(fg_color=t.bg)
+        self._dialog_heading(w, "Music library", "Playlist controls stay available without living on Home.")
+
+        composer = ctk.CTkFrame(w, fg_color="transparent")
+        composer.pack(fill="x", padx=24, pady=(0, 10))
+        url = ctk.CTkEntry(
+            composer, height=42, corner_radius=13,
+            placeholder_text="YouTube / Spotify / direct audio URL",
+        )
+        url.pack(side="left", fill="x", expand=True, padx=(0, 8))
+
+        body = ctk.CTkScrollableFrame(w, fg_color="transparent")
+        body.pack(fill="both", expand=True, padx=18, pady=(0, 18))
+
+        def render():
+            for child in body.winfo_children():
+                child.destroy()
+            if not a.playlist.tracks:
+                ctk.CTkLabel(
+                    body, text="No tracks yet.", text_color=t.muted
+                ).pack(pady=24)
+                return
+            for i, track in enumerate(list(a.playlist.tracks)):
+                row = ctk.CTkFrame(body, fg_color=t.sidebar, corner_radius=14)
+                row.pack(fill="x", padx=4, pady=4)
+                title = track.title or track.url
+                ctk.CTkLabel(
+                    row, text=title[:58], anchor="w", text_color=t.text
+                ).pack(side="left", fill="x", expand=True, padx=12, pady=10)
+                ctk.CTkButton(
+                    row, text="Play", width=58, height=30,
+                    fg_color=t.glow, hover_color=t.accent_hover,
+                    command=lambda idx=i: a.playlist_play_index(idx),
+                ).pack(side="left", padx=4)
+                ctk.CTkButton(
+                    row, text="×", width=32, height=30,
+                    fg_color="transparent", hover_color="#5b2c36",
+                    command=lambda idx=i: (a.playlist_remove_index(idx), render()),
+                ).pack(side="left", padx=(0, 8))
+
+        def add():
+            value = url.get().strip()
+            if not value:
+                return
+            try:
+                a.entry_music.delete(0, tk.END)
+                a.entry_music.insert(0, value)
+                a.add_current_url_to_playlist()
+                url.delete(0, tk.END)
+                render()
+            except Exception:
+                pass
+
+        ctk.CTkButton(
+            composer, text="Add", width=72, height=42,
+            fg_color=t.accent, hover_color=t.accent_hover,
+            text_color="#071116", command=add,
+        ).pack(side="right")
+        url.bind("<Return>", lambda _event: add())
+        render()
+
+    def open_advanced_workspace(self):
+        """Reveal the full legacy control surface as a safety-net for every feature."""
+        a = self.app
+        try:
+            if self.surface is not None:
+                self.surface.pack_forget()
+            a.sidebar.pack(side="left", fill="y", padx=(12, 0), pady=12)
+            a.setup_frame.pack(side="right", fill="both", expand=True, padx=(20, 12), pady=12)
+        except Exception:
+            return
+
+        back = getattr(self, "_advanced_back", None)
+        if back is None or not back.winfo_exists():
+            back = ctk.CTkButton(
+                a.main_container,
+                text="← Clean Home",
+                width=112,
+                height=36,
+                corner_radius=18,
+                fg_color=a.theme.accent,
+                hover_color=a.theme.accent_hover,
+                text_color="#071116",
+                font=ctk.CTkFont(size=11, weight="bold"),
+                command=self.close_advanced_workspace,
             )
-            card.pack(fill="x", padx=24, pady=4)
+            self._advanced_back = back
+        back.place(relx=0.985, rely=0.985, anchor="se")
+        back.lift()
+
+    def close_advanced_workspace(self):
+        a = self.app
+        try:
+            a.sidebar.pack_forget()
+            a.setup_frame.pack_forget()
+        except Exception:
+            pass
+        try:
+            if getattr(self, "_advanced_back", None) is not None:
+                self._advanced_back.place_forget()
+        except Exception:
+            pass
+        if self.surface is None or not self.surface.winfo_exists():
+            self.install()
+        else:
+            self.surface.pack(fill="both", expand=True)
+            self._apply_home_layout()
 
     def open_custom_session(self):
         a = self.app
@@ -700,7 +875,7 @@ class MinimalShell:
         t = a.theme
         w = ctk.CTkToplevel(a)
         w.title("Aqua Focus · Settings")
-        w.geometry("500x580")
+        w.geometry("540x680")
         w.minsize(460, 520)
         w.configure(fg_color=t.bg)
 
@@ -733,20 +908,66 @@ class MinimalShell:
             command=self._audio_settings,
         ).pack(fill="x", padx=12, pady=5)
 
+        self._section(body, "Background")
+        ctk.CTkButton(
+            body, text="Choose background image", height=40,
+            fg_color=t.sidebar, hover_color=t.glow,
+            border_width=1, border_color=t.glow,
+            command=a.pick_background,
+        ).pack(fill="x", padx=12, pady=5)
+        ctk.CTkButton(
+            body, text="Reset to theme background", height=40,
+            fg_color=t.sidebar, hover_color=t.glow,
+            border_width=1, border_color=t.glow,
+            command=a.reset_background,
+        ).pack(fill="x", padx=12, pady=5)
+
+        self._section(body, "Language")
+        lang = ctk.CTkOptionMenu(
+            body,
+            values=[a.t("lang_ja"), a.t("lang_en")],
+            command=a._on_language_change,
+            height=40, corner_radius=12,
+        )
+        lang.set(a.t("lang_en") if a.i18n.lang == "en" else a.t("lang_ja"))
+        lang.pack(fill="x", padx=12, pady=(0, 8))
+
         self._section(body, "Focus")
         ctk.CTkButton(
-            body, text="Temptation guard settings", height=40,
+            body,
+            text="Disable focus lock" if a._temptation_armed else "Enable focus lock",
+            height=40,
+            fg_color=t.sidebar, hover_color=t.glow,
+            border_width=1, border_color=t.glow,
+            command=a.toggle_temptation_guard,
+        ).pack(fill="x", padx=12, pady=5)
+        ctk.CTkButton(
+            body, text="Focus lock exclusions", height=40,
             fg_color=t.sidebar, hover_color=t.glow,
             border_width=1, border_color=t.glow,
             command=a.open_temptation_exclude_dialog,
         ).pack(fill="x", padx=12, pady=5)
 
         self._section(body, "App")
+        auto_updates = ctk.BooleanVar(value=bool(a.settings.get("agiu_auto_check", True)))
+        def set_auto_updates():
+            a.settings.set("agiu_auto_check", bool(auto_updates.get()))
+        ctk.CTkSwitch(
+            body, text="Automatically check for updates",
+            variable=auto_updates, command=set_auto_updates,
+            progress_color=t.accent, text_color=t.text,
+        ).pack(anchor="w", padx=12, pady=8)
         ctk.CTkButton(
-            body, text="Check for updates", height=40,
+            body, text="Check for updates now", height=40,
             fg_color=t.sidebar, hover_color=t.glow,
             border_width=1, border_color=t.glow,
             command=a._agiu_check_manual,
+        ).pack(fill="x", padx=12, pady=5)
+        ctk.CTkButton(
+            body, text="Open full controls", height=40,
+            fg_color=t.sidebar, hover_color=t.glow,
+            border_width=1, border_color=t.glow,
+            command=lambda: (w.destroy(), self.open_advanced_workspace()),
         ).pack(fill="x", padx=12, pady=5)
 
     def _audio_settings(self):
