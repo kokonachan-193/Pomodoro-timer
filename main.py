@@ -2356,12 +2356,31 @@ class WaterTimer(ctk.CTk):
         # Keep advanced/occasional controls one click away instead of letting the
         # dashboard grow into a wall of controls. This does not remove features:
         # it reuses MinimalShell's complete More/Settings surface.
+        # Keep frequent workspace actions discoverable; move the long tail into
+        # ••• instead of deleting it. This restores capability without returning
+        # to a wall of controls.
+        self.dashboard_actions = ctk.CTkFrame(self.setup_frame, fg_color="transparent")
+        self.dashboard_actions.pack(fill="x", pady=(4, 0))
+        self.dashboard_tasks_btn = ctk.CTkButton(
+            self.dashboard_actions, text="Tasks", width=78, height=34, corner_radius=17,
+            fg_color="transparent", hover_color=self.theme.glow,
+            border_width=1, border_color=self.theme.glow, text_color=self.theme.text,
+            command=self.workspace.open_tasks,
+        )
+        self.dashboard_tasks_btn.pack(side="right", padx=(6, 0))
+        self.dashboard_stats_btn = ctk.CTkButton(
+            self.dashboard_actions, text="Stats", width=78, height=34, corner_radius=17,
+            fg_color="transparent", hover_color=self.theme.glow,
+            border_width=1, border_color=self.theme.glow, text_color=self.theme.text,
+            command=self.workspace.open_stats,
+        )
+        self.dashboard_stats_btn.pack(side="right", padx=(6, 0))
         self.dashboard_more_btn = ctk.CTkButton(
-            self.setup_frame,
+            self.dashboard_actions,
             text="•••",
             width=44,
-            height=36,
-            corner_radius=18,
+            height=34,
+            corner_radius=17,
             fg_color="transparent",
             hover_color=self.theme.glow,
             border_width=1,
@@ -2370,7 +2389,7 @@ class WaterTimer(ctk.CTk):
             font=ctk.CTkFont(family=FONT_UI_BOLD, size=15),
             command=self.minimal_shell.open_tools,
         )
-        self.dashboard_more_btn.pack(anchor="e", pady=(4, 0))
+        self.dashboard_more_btn.pack(side="right")
 
         self.hero_label = ctk.CTkLabel(
             self.setup_frame, text=self.t("timer_settings"),
@@ -2980,22 +2999,29 @@ class WaterTimer(ctk.CTk):
         short = height < 650
 
         # Sidebar is preserved in memory and simply disclosed through ••• on
-        # compact windows. This avoids the CTkScrollableFrame destroy/recreate
-        # lifecycle that caused stale Tcl widget handles.
-        if compact != self._dashboard_compact:
-            try:
-                if compact:
+        # compact windows. Never destroy it: several legacy feature surfaces are
+        # intentionally backed by these widgets.
+        try:
+            if compact:
+                if self.sidebar.winfo_ismapped():
                     self.sidebar.pack_forget()
-                else:
-                    self.sidebar.pack(side="left", fill="y", padx=(12, 0), pady=12, before=self.setup_frame)
-            except Exception:
-                pass
-            self._dashboard_compact = compact
+            else:
+                # Reassert visibility on every non-compact layout. This also
+                # repairs states left behind by the old minimal/advanced shell.
+                if not self.sidebar.winfo_ismapped():
+                    self.sidebar.pack(side="left", fill="y", padx=(12, 0), pady=12)
+        except Exception:
+            pass
+        self._dashboard_compact = compact
 
         try:
-            side_gap = 8 if very_compact else (12 if compact else 20)
+            side_gap = 8 if very_compact else (12 if compact else 16)
             outer_right = 8 if very_compact else 12
             self.setup_frame.pack_configure(padx=(side_gap, outer_right), pady=8 if short else 12)
+            # Give large displays a real workspace instead of a phone-width
+            # column floating in the middle of an ultrawide monitor.
+            target_width = width - (300 if not compact else 24)
+            self.setup_frame.configure(width=max(460, min(1180, target_width)))
         except Exception:
             pass
 
@@ -3016,7 +3042,7 @@ class WaterTimer(ctk.CTk):
 
         # Do not let ultrawide monitors turn every card into a giant strip.
         # Larger screens receive breathing room instead of larger cognitive load.
-        card_pad = 2 if very_compact else (6 if compact else (52 if ultrawide else (28 if wide else 0)))
+        card_pad = 2 if very_compact else (6 if compact else (12 if ultrawide else (8 if wide else 0)))
         for panel in (
             getattr(self, "ocean_hero", None),
             getattr(self, "mode_launcher", None),
@@ -3037,8 +3063,15 @@ class WaterTimer(ctk.CTk):
         except Exception:
             pass
 
-        for btn in getattr(self, "v2_mode_buttons", []):
+        mode_buttons = list(getattr(self, "v2_mode_buttons", []))
+        for i, btn in enumerate(mode_buttons):
             try:
+                # Narrow windows reflow Quick Dive into one column instead of
+                # squeezing labels/buttons until they clip.
+                if very_compact:
+                    btn.grid_configure(row=i, column=0, columnspan=2, sticky="ew", padx=5, pady=4)
+                else:
+                    btn.grid_configure(row=i // 2, column=i % 2, columnspan=1, sticky="ew", padx=5, pady=5)
                 btn.configure(height=44 if very_compact else (48 if compact else 50))
             except Exception:
                 pass
@@ -3049,10 +3082,10 @@ class WaterTimer(ctk.CTk):
             pass
 
         try:
-            self.dashboard_more_btn.configure(
-                width=42 if compact else 44,
-                height=34 if compact else 36,
-            )
+            self.dashboard_more_btn.configure(width=42 if compact else 44, height=34)
+            for quick in (getattr(self, "dashboard_tasks_btn", None), getattr(self, "dashboard_stats_btn", None)):
+                if quick is not None:
+                    quick.configure(width=70 if very_compact else 78, height=34)
         except Exception:
             pass
 
@@ -3118,11 +3151,11 @@ class WaterTimer(ctk.CTk):
         if not hasattr(self, "rhythm_canvas"):
             return
         try:
-            w = float(self.entry_work.get() or 25)
-            b = float(self.entry_break.get() or 5)
-            lb = float(self.entry_long_break.get() or 15)
-            every = max(1, int(float(self.entry_long_every.get() or 4)))
-        except ValueError:
+            w = float(self._read_entry_view("entry_work", max(1.0, getattr(self, "work_time", 1500) / 60.0)) or 25)
+            b = float(self._read_entry_view("entry_break", max(0.0, getattr(self, "break_time", 300) / 60.0)) or 5)
+            lb = float(self._read_entry_view("entry_long_break", max(0.0, getattr(self, "long_break_time", 900) / 60.0)) or 15)
+            every = max(1, int(float(self._read_entry_view("entry_long_every", getattr(self, "long_break_every", 4)) or 4)))
+        except (TypeError, ValueError):
             return
         try:
             self.rhythm_canvas.update_idletasks()
@@ -4572,31 +4605,45 @@ class WaterTimer(ctk.CTk):
         """Back-compat alias used by break / stop paths."""
         self._clear_all_temptation_films()
 
-    def set_preset(self, w, b, name: str = "", long_break: float = 15, long_every: int = 4, cycles: int = 4, blurb: str = "", key: str = ""):
-        # A preset may be triggered while a compatibility shell is rebuilding the
-        # dashboard.  CTk widget Python objects can outlive their underlying Tcl
-        # commands, so calling delete()/insert() blindly raises:
-        #   TclError: invalid command name "...!ctkentry.!entry"
-        # Treat UI entries as optional views of the preset state and only write
-        # through live widgets. The actual timer values are still applied below.
-        def _write_live_entry(attr: str, value) -> bool:
-            widget = getattr(self, attr, None)
-            if widget is None:
-                return False
-            try:
-                if not widget.winfo_exists():
-                    return False
-                widget.delete(0, tk.END)
-                widget.insert(0, str(value))
-                return True
-            except (tk.TclError, AttributeError):
-                return False
+    def _entry_alive(self, attr: str) -> bool:
+        """Return True only while a CTk/Tk entry still owns a live Tcl command."""
+        widget = getattr(self, attr, None)
+        if widget is None:
+            return False
+        try:
+            return bool(widget.winfo_exists())
+        except (tk.TclError, AttributeError, RuntimeError):
+            return False
 
-        _write_live_entry("entry_work", w)
-        _write_live_entry("entry_break", b)
-        _write_live_entry("entry_long_break", long_break)
-        _write_live_entry("entry_long_every", long_every)
-        _write_live_entry("entry_cycles", cycles)
+    def _write_entry_view(self, attr: str, value) -> bool:
+        """Best-effort UI sync; authoritative timer state must never depend on it."""
+        if not self._entry_alive(attr):
+            return False
+        widget = getattr(self, attr)
+        try:
+            widget.delete(0, tk.END)
+            widget.insert(0, str(value))
+            return True
+        except (tk.TclError, AttributeError, RuntimeError):
+            return False
+
+    def _read_entry_view(self, attr: str, fallback=""):
+        """Read a live entry, otherwise return internal-state fallback."""
+        if not self._entry_alive(attr):
+            return fallback
+        try:
+            return getattr(self, attr).get()
+        except (tk.TclError, AttributeError, RuntimeError):
+            return fallback
+
+    def set_preset(self, w, b, name: str = "", long_break: float = 15, long_every: int = 4, cycles: int = 4, blurb: str = "", key: str = ""):
+        # Presets update timer state first. Entry widgets are only views and may
+        # be temporarily hidden/rebuilt by responsive/theme changes.
+        self._write_entry_view("entry_work", w)
+        self._write_entry_view("entry_break", b)
+        self._write_entry_view("entry_long_break", long_break)
+        self._write_entry_view("entry_long_every", long_every)
+        self._write_entry_view("entry_cycles", cycles)
 
         # Keep timer state authoritative even when the legacy entry surface is
         # temporarily unavailable.
@@ -4651,17 +4698,29 @@ class WaterTimer(ctk.CTk):
         self.after(90, self.start_immersive_timer)
 
     def start_immersive_timer(self):
+        # Never make focus startup depend on a stale Tk command. Responsive/theme
+        # rebuilds can outlive CTk Python objects, so read live views only when
+        # available and fall back to the already-authoritative timer state.
         try:
-            self.work_time = float(self.entry_work.get()) * 60
-            self.break_time = float(self.entry_break.get()) * 60
-            self.long_break_time = float(self.entry_long_break.get()) * 60
-            self.long_break_every = max(1, int(float(self.entry_long_every.get())))
-            self.max_cycles = max(1, int(float(self.entry_cycles.get())))
-        except ValueError:
-            self.hero_sub.configure(text=self.t("invalid_number"))
+            work_default = max(1.0, float(getattr(self, "work_time", 25 * 60)) / 60.0)
+            break_default = max(0.0, float(getattr(self, "break_time", 5 * 60)) / 60.0)
+            long_default = max(0.0, float(getattr(self, "long_break_time", 15 * 60)) / 60.0)
+            every_default = max(1, int(getattr(self, "long_break_every", 4) or 4))
+            cycles_default = max(1, int(getattr(self, "max_cycles", 4) or 4))
+
+            self.work_time = max(1.0, float(self._read_entry_view("entry_work", work_default))) * 60
+            self.break_time = max(0.0, float(self._read_entry_view("entry_break", break_default))) * 60
+            self.long_break_time = max(0.0, float(self._read_entry_view("entry_long_break", long_default))) * 60
+            self.long_break_every = max(1, int(float(self._read_entry_view("entry_long_every", every_default))))
+            self.max_cycles = max(1, int(float(self._read_entry_view("entry_cycles", cycles_default))))
+        except (TypeError, ValueError):
+            try:
+                self.hero_sub.configure(text=self.t("invalid_number"))
+            except Exception:
+                pass
             return
 
-        self.intention = self.entry_intention.get().strip()
+        self.intention = str(self._read_entry_view("entry_intention", getattr(self, "intention", ""))).strip()
         if self.intention:
             self.workspace.current_task = self.intention
         self.is_long_break = False
@@ -5382,4 +5441,21 @@ class WaterTimer(ctk.CTk):
 if __name__ == "__main__":
     enable_windows_dpi_awareness()
     app = WaterTimer()
+
+    # Preview-only sizing hook used by CI screenshot capture. Normal launches are
+    # unchanged; this merely lets us verify responsive layouts before release.
+    try:
+        import sys
+        if "--preview-size" in sys.argv:
+            idx = sys.argv.index("--preview-size")
+            size = sys.argv[idx + 1]
+            if "x" in size.lower():
+                sw, sh = size.lower().split("x", 1)
+                sw_i, sh_i = max(500, int(sw)), max(500, int(sh))
+                app.geometry(f"{sw_i}x{sh_i}")
+                app.update_idletasks()
+                app.after(80, app._apply_dashboard_layout)
+    except Exception:
+        pass
+
     app.mainloop()
