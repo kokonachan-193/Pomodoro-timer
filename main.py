@@ -1668,6 +1668,8 @@ class WaterTimer(ctk.CTk):
         self._temptation_films: dict[int, dict] = {}  # target_hwnd -> film widgets
         self._temptation_quote_idx = 0
         self._temptation_quote_job = None
+        self._dashboard_resize_job = None
+        self._dashboard_compact = None
 
         self.playlist = PlaylistStore(app_root() / "playlist.json")
         self.temptation_exclude = TemptationExcludeStore(
@@ -1718,6 +1720,7 @@ class WaterTimer(ctk.CTk):
         self._v3_focus = False
         self._polish_full_dashboard()
         self._curate_dashboard()
+        self._install_dashboard_responsive()
 
         self.bind("<space>", self._hotkey_space)
         self.bind("<Escape>", self._hotkey_esc)
@@ -2350,6 +2353,25 @@ class WaterTimer(ctk.CTk):
         )
         self.setup_frame.pack(side="right", fill="both", expand=True, padx=(20, 12), pady=12)
 
+        # Keep advanced/occasional controls one click away instead of letting the
+        # dashboard grow into a wall of controls. This does not remove features:
+        # it reuses MinimalShell's complete More/Settings surface.
+        self.dashboard_more_btn = ctk.CTkButton(
+            self.setup_frame,
+            text="•••",
+            width=44,
+            height=36,
+            corner_radius=18,
+            fg_color="transparent",
+            hover_color=self.theme.glow,
+            border_width=1,
+            border_color=self.theme.glow,
+            text_color=self.theme.muted,
+            font=ctk.CTkFont(family=FONT_UI_BOLD, size=15),
+            command=self.minimal_shell.open_tools,
+        )
+        self.dashboard_more_btn.pack(anchor="e", pady=(4, 0))
+
         self.hero_label = ctk.CTkLabel(
             self.setup_frame, text=self.t("timer_settings"),
             font=ctk.CTkFont(family=FONT_UI_BOLD, size=38),
@@ -2916,6 +2938,125 @@ class WaterTimer(ctk.CTk):
                     widget.pack_forget()
                 except Exception:
                     pass
+
+    def _install_dashboard_responsive(self):
+        """Keep the feature-complete dashboard usable from compact to ultrawide."""
+        try:
+            self.minsize(500, 500)
+        except Exception:
+            pass
+        try:
+            self.bind("<Configure>", self._on_dashboard_resize, add="+")
+            self.after(60, self._apply_dashboard_layout)
+        except Exception:
+            pass
+
+    def _on_dashboard_resize(self, event=None):
+        # Ignore child configure storms; only the root window controls the mode.
+        if event is not None and getattr(event, "widget", None) is not self:
+            return
+        try:
+            if self._dashboard_resize_job is not None:
+                self.after_cancel(self._dashboard_resize_job)
+        except Exception:
+            pass
+        try:
+            self._dashboard_resize_job = self.after(70, self._apply_dashboard_layout)
+        except Exception:
+            self._dashboard_resize_job = None
+
+    def _apply_dashboard_layout(self):
+        """Responsive disclosure without deleting or recreating functional widgets."""
+        try:
+            width = max(1, int(self.winfo_width()))
+            height = max(1, int(self.winfo_height()))
+        except Exception:
+            return
+
+        compact = width < 860
+        very_compact = width < 680
+        wide = width >= 1320
+        ultrawide = width >= 1780
+        short = height < 650
+
+        # Sidebar is preserved in memory and simply disclosed through ••• on
+        # compact windows. This avoids the CTkScrollableFrame destroy/recreate
+        # lifecycle that caused stale Tcl widget handles.
+        if compact != self._dashboard_compact:
+            try:
+                if compact:
+                    self.sidebar.pack_forget()
+                else:
+                    self.sidebar.pack(side="left", fill="y", padx=(12, 0), pady=12, before=self.setup_frame)
+            except Exception:
+                pass
+            self._dashboard_compact = compact
+
+        try:
+            side_gap = 8 if very_compact else (12 if compact else 20)
+            outer_right = 8 if very_compact else 12
+            self.setup_frame.pack_configure(padx=(side_gap, outer_right), pady=8 if short else 12)
+        except Exception:
+            pass
+
+        try:
+            self.hero_label.configure(
+                font=ctk.CTkFont(
+                    family=FONT_UI_BOLD,
+                    size=25 if very_compact else (29 if compact else (34 if wide else 32)),
+                )
+            )
+            self.hero_label.pack_configure(pady=(10 if short else 18, 4))
+            self.hero_sub.configure(
+                font=ctk.CTkFont(family=FONT_UI, size=11 if very_compact else 12),
+                wraplength=max(300, min(900, width - (80 if compact else 340))),
+            )
+        except Exception:
+            pass
+
+        # Do not let ultrawide monitors turn every card into a giant strip.
+        # Larger screens receive breathing room instead of larger cognitive load.
+        card_pad = 2 if very_compact else (6 if compact else (52 if ultrawide else (28 if wide else 0)))
+        for panel in (
+            getattr(self, "ocean_hero", None),
+            getattr(self, "mode_launcher", None),
+            getattr(self, "intention_panel", None),
+            getattr(self, "rhythm_panel", None),
+            getattr(self, "inputs_row", None),
+            getattr(self, "music_panel", None),
+        ):
+            if panel is None:
+                continue
+            try:
+                panel.pack_configure(padx=card_pad)
+            except Exception:
+                pass
+
+        try:
+            self.ocean_hero.configure(height=104 if short else (116 if compact else 132))
+        except Exception:
+            pass
+
+        for btn in getattr(self, "v2_mode_buttons", []):
+            try:
+                btn.configure(height=44 if very_compact else (48 if compact else 50))
+            except Exception:
+                pass
+
+        try:
+            self.now_preview.configure(width=max(240, min(360, width - (110 if compact else 390))))
+        except Exception:
+            pass
+
+        try:
+            self.dashboard_more_btn.configure(
+                width=42 if compact else 44,
+                height=34 if compact else 36,
+            )
+        except Exception:
+            pass
+
+        self._dashboard_resize_job = None
 
     def _compact_input(self, parent, label_key: str, default: str, col: int) -> ctk.CTkEntry:
         box = ctk.CTkFrame(parent, fg_color="transparent")
@@ -4432,16 +4573,41 @@ class WaterTimer(ctk.CTk):
         self._clear_all_temptation_films()
 
     def set_preset(self, w, b, name: str = "", long_break: float = 15, long_every: int = 4, cycles: int = 4, blurb: str = "", key: str = ""):
-        self.entry_work.delete(0, tk.END)
-        self.entry_work.insert(0, str(w))
-        self.entry_break.delete(0, tk.END)
-        self.entry_break.insert(0, str(b))
-        self.entry_long_break.delete(0, tk.END)
-        self.entry_long_break.insert(0, str(long_break))
-        self.entry_long_every.delete(0, tk.END)
-        self.entry_long_every.insert(0, str(long_every))
-        self.entry_cycles.delete(0, tk.END)
-        self.entry_cycles.insert(0, str(cycles))
+        # A preset may be triggered while a compatibility shell is rebuilding the
+        # dashboard.  CTk widget Python objects can outlive their underlying Tcl
+        # commands, so calling delete()/insert() blindly raises:
+        #   TclError: invalid command name "...!ctkentry.!entry"
+        # Treat UI entries as optional views of the preset state and only write
+        # through live widgets. The actual timer values are still applied below.
+        def _write_live_entry(attr: str, value) -> bool:
+            widget = getattr(self, attr, None)
+            if widget is None:
+                return False
+            try:
+                if not widget.winfo_exists():
+                    return False
+                widget.delete(0, tk.END)
+                widget.insert(0, str(value))
+                return True
+            except (tk.TclError, AttributeError):
+                return False
+
+        _write_live_entry("entry_work", w)
+        _write_live_entry("entry_break", b)
+        _write_live_entry("entry_long_break", long_break)
+        _write_live_entry("entry_long_every", long_every)
+        _write_live_entry("entry_cycles", cycles)
+
+        # Keep timer state authoritative even when the legacy entry surface is
+        # temporarily unavailable.
+        try:
+            self.work_time = max(1, float(w)) * 60
+            self.break_time = max(0, float(b)) * 60
+            self.long_break_time = max(0, float(long_break)) * 60
+            self.long_break_every = max(1, int(float(long_every)))
+            self.max_cycles = max(1, int(float(cycles)))
+        except (TypeError, ValueError):
+            pass
         msg = self.t("preset_msg", name=name, blurb=blurb) if blurb else f"Preset: {name}"
         self.hero_sub.configure(text=msg)
         if key:

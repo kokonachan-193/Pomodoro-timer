@@ -12,7 +12,7 @@
 <p align="center">
   <a href="README.ja.md">日本語</a>
   ·
-  <b>v2.1.3</b>
+  <b>v2.1.4</b>
   ·
   Windows · macOS · Ubuntu · Linux · Android
 </p>
@@ -25,24 +25,24 @@ No build required. Download the package for your platform from the GitHub Releas
 
 | Platform | Package | Run |
 | :--- | :--- | :--- |
-| **Windows 10 / 11** | `AquaFocusSetup-2.1.3.exe` | Installer · recommended |
-| **Windows** | `AquaFocus-Windows-Portable-2.1.3.zip` | Unzip → `AquaFocus.exe` |
-| **macOS** | `AquaFocus-macOS-2.1.3.zip` | Unzip → `AquaFocus.app` |
-| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.1.3.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
-| **Android 8+** | `AquaFocus-Android-2.1.3.apk` | Install the APK |
+| **Windows 10 / 11** | `AquaFocusSetup-2.1.4.exe` | Installer · recommended |
+| **Windows** | `AquaFocus-Windows-Portable-2.1.4.zip` | Unzip → `AquaFocus.exe` |
+| **macOS** | `AquaFocus-macOS-2.1.4.zip` | Unzip → `AquaFocus.app` |
+| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.1.4.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
+| **Android 8+** | `AquaFocus-Android-2.1.4.apk` | Install the APK |
 
 ffmpeg is **bundled** on desktop. Existing desktop installs can check GitHub Releases through **AGIU**.
 
 ---
 
-## What’s new in 2.1.3
+## What’s new in 2.1.4
 
-- **Full dashboard restored** — the feature-complete Aqua Focus home is the default again instead of the overly sparse minimal shell
-- **Features stay visible** — Quick Dive, timer rhythm, custom timing, intention, music, playlist controls, volume and primary actions remain directly accessible
-- **Restrained visual polish** — spacing, card radii, borders, typography and button proportions are cleaned up without making the app empty
-- **Sidebar restored** — workspace, language, audio output, updater, Focus Lock, presets, theme and background controls remain available
-- **Minimal-shell crash fix retained** — the previous CTkEntry lifecycle fix remains in the codebase, so legacy widgets are no longer destroyed underneath timer logic
-- **Focus modes preserved** — Focus, Deep Dive, Countdown, Stopwatch and Alarm continue to work from the main interface
+- **CTkEntry crash fixed at the source** — preset changes now ignore stale Tk handles and still update the authoritative timer state, preventing `invalid command name ...ctkentry.!entry`
+- **Responsive dashboard** — compact windows hide the heavy sidebar without destroying it, while large and ultrawide windows keep readable card widths instead of stretching everything
+- **Features preserved** — Quick Dive, custom timing, intention, music, playlist, volume, tasks, stats, soundscapes, extensions, Focus Lock, updater, themes and background controls remain available
+- **Progressive disclosure** — advanced and occasional controls are reachable from a compact `•••` menu instead of crowding the main screen
+- **Focus music controls restored** — the in-session menu stays reachable so tracks can be added, skipped, or navigated without leaving focus
+- **Rising-water progress animation** — the focus view now fills upward with a subtle animated waterline tied to elapsed focus time; Reduce Motion still disables the motion
 
 ### Carried forward from 2.0.0
 

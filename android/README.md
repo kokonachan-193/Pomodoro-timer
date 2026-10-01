@@ -26,4 +26,4 @@ buildozer android debug
 
 GitHub Actions builds:
 
-`AquaFocus-Android-2.1.3.apk`
+`AquaFocus-Android-2.1.4.apk`

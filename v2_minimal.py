@@ -591,8 +591,12 @@ class MinimalShell:
         a = self.app
         scale = self._apply_focus_scale()
         visible = bool(getattr(a, "_chrome_visible", False)) or a.mode == "Break" or a.is_paused or a._menu_open
+        # Keep one unobtrusive entry point visible during focus. The menu already
+        # contains playlist add/previous/next, continuous playback and session
+        # controls, so users can add a song without leaving the focus screen.
         try:
-            a.menu_btn.place_forget()
+            a.menu_btn.place(relx=0.975, rely=0.04, anchor="ne")
+            a.menu_btn.lift()
         except Exception:
             pass
 
@@ -642,6 +646,34 @@ class MinimalShell:
         progress = 0.0
         if a.total_seconds > 0:
             progress = max(0.0, min(1.0, 1.0 - a.remaining_seconds / a.total_seconds))
+
+        # Aqua progress: during Work, a restrained waterline rises with elapsed
+        # focus time. It sits behind the timer and is disabled by Reduce Motion.
+        # On breaks the surface relaxes back down so the metaphor stays readable.
+        if a.mode == "Work":
+            level_progress = progress
+        else:
+            level_progress = max(0.0, 0.18 - progress * 0.18)
+        water_y = h * (0.94 - 0.54 * level_progress)
+        wave_amp = 0.0 if a.reduce_motion else max(2.0, h * 0.006)
+        wave_points = [(0, h)]
+        segments = 24
+        for i in range(segments + 1):
+            x = w * i / segments
+            phase = self._focus_phase * 3.2 + i * 0.72
+            y = water_y + math.sin(phase) * wave_amp
+            wave_points.append((x, y))
+        wave_points.append((w, h))
+        fill = self._blend(t.bg, t.accent if a.mode == "Work" else t.wave_front_break, 0.10)
+        edge = self._blend(t.bg, t.accent if a.mode == "Work" else t.wave_front_break, 0.34)
+        c.create_polygon(*[coord for point in wave_points for coord in point], fill=fill, outline="")
+        line_points = []
+        for i in range(segments + 1):
+            x = w * i / segments
+            phase = self._focus_phase * 3.2 + i * 0.72
+            y = water_y + math.sin(phase) * wave_amp
+            line_points.extend((x, y))
+        c.create_line(*line_points, fill=edge, width=2, smooth=True)
 
         cx, cy = w / 2, h * 0.40
         radius = min(w, h) * (0.17 if scale < 0.78 else 0.185)
