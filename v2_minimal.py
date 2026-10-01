@@ -591,12 +591,17 @@ class MinimalShell:
         a = self.app
         scale = self._apply_focus_scale()
         visible = bool(getattr(a, "_chrome_visible", False)) or a.mode == "Break" or a.is_paused or a._menu_open
-        # Keep one unobtrusive entry point visible during focus. The menu already
-        # contains playlist add/previous/next, continuous playback and session
-        # controls, so users can add a song without leaving the focus screen.
+        # Keep the two most useful in-session actions one tap away: direct music
+        # add/library access and the rest of the focus menu.  They stay small and
+        # pinned to the upper-right so the timer remains visually dominant.
         try:
             a.menu_btn.place(relx=0.975, rely=0.04, anchor="ne")
             a.menu_btn.lift()
+        except Exception:
+            pass
+        try:
+            a.focus_music_btn.place(relx=0.925, rely=0.04, anchor="ne")
+            a.focus_music_btn.lift()
         except Exception:
             pass
 
