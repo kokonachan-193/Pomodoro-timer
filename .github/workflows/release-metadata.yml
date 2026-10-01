@@ -2,6 +2,11 @@ name: release-metadata
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "docs/release/v2.1.1.md"
+      - ".github/workflows/release-metadata.yml"
 
 permissions:
   contents: write
@@ -11,10 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Update Aqua Focus v2.1.0 release description
+      - name: Update Aqua Focus v2.1.1 release description
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v2.1.0
-          name: Aqua Focus v2.1.0
+          tag_name: v2.1.1
+          name: Aqua Focus v2.1.1
           make_latest: true
-          body_path: docs/release/v2.1.0.md
+          body_path: docs/release/v2.1.1.md
