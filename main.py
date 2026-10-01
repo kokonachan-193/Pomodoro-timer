@@ -3054,6 +3054,8 @@ class WaterTimer(ctk.CTk):
             self.load_theme_background(name)
         if animate:
             self._pulse_widget(self.start_btn)
+        if getattr(self, "minimal_shell", None) is not None and getattr(self.minimal_shell, "surface", None) is not None:
+            self.minimal_shell.refresh_theme()
 
     def load_theme_background(self, theme_name: str):
         fname = THEME_BG_FILES.get(theme_name, "ocean_depth.jpg")
@@ -4575,9 +4577,10 @@ class WaterTimer(ctk.CTk):
         if self.remaining_seconds > 0:
             self.draw_waves()
             self.time_text.configure(text=self.format_time(self.remaining_seconds))
-            # subtle pulse on last 10 seconds
-            if self.remaining_seconds <= 10:
-                # gentle breath, not alarm-like pulse
+            # Keep the v3 focus view visually stable; no countdown urgency pulse.
+            if getattr(self, "_v3_focus", False):
+                self.time_text.configure(font=ctk.CTkFont(family=FONT_UI_BOLD, size=94))
+            elif self.remaining_seconds <= 10:
                 scale = 88 + int(2 * abs(math.sin(self._ui_pulse * 0.6)))
                 self.time_text.configure(font=ctk.CTkFont(family=FONT_UI_BOLD, size=scale))
             else:
