@@ -6,6 +6,9 @@ on:
     branches: [main]
     paths:
       - "main.py"
+      - "v2_experience.py"
+      - "v2_workspace.py"
+      - "extensions/**"
       - "i18n.py"
       - "agiu.py"
       - "settings_store.py"
@@ -20,11 +23,11 @@ permissions:
   contents: write
 
 concurrency:
-  group: aqua-focus-v1.2.0
+  group: aqua-focus-v2.0.0
   cancel-in-progress: true
 
 env:
-  VERSION: "1.2.0"
+  VERSION: "2.0.0"
 
 jobs:
   windows:
@@ -35,7 +38,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Python syntax check
-        run: python -m py_compile main.py i18n.py agiu.py settings_store.py
+        run: python -m py_compile main.py i18n.py agiu.py settings_store.py v2_experience.py v2_workspace.py
       - name: Install Inno Setup
         shell: powershell
         run: choco install innosetup -y --no-progress
@@ -46,8 +49,8 @@ jobs:
         with:
           name: release-windows
           path: |
-            dist/releases/AquaFocusSetup-1.2.0.exe
-            dist/releases/AquaFocus-Windows-Portable-1.2.0.zip
+            dist/releases/AquaFocusSetup-2.0.0.exe
+            dist/releases/AquaFocus-Windows-Portable-2.0.0.zip
           if-no-files-found: error
 
   linux:
@@ -58,7 +61,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Python syntax check
-        run: python -m py_compile main.py i18n.py agiu.py settings_store.py
+        run: python -m py_compile main.py i18n.py agiu.py settings_store.py v2_experience.py v2_workspace.py
       - run: sudo apt-get update && sudo apt-get install -y python3-tk libportaudio2 portaudio19-dev
       - name: Build Linux / Ubuntu
         run: |
@@ -68,7 +71,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: release-linux
-          path: dist/releases/AquaFocus-*-Portable-1.2.0.tar.gz
+          path: dist/releases/AquaFocus-*-Portable-2.0.0.tar.gz
 
   macos:
     runs-on: macos-14
@@ -78,7 +81,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Python syntax check
-        run: python -m py_compile main.py i18n.py agiu.py settings_store.py
+        run: python -m py_compile main.py i18n.py agiu.py settings_store.py v2_experience.py v2_workspace.py
       - name: Build macOS
         run: |
           chmod +x scripts/build_unix.sh scripts/make_release_unix.sh
@@ -86,7 +89,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: release-macos
-          path: dist/releases/AquaFocus-macOS-1.2.0.zip
+          path: dist/releases/AquaFocus-macOS-2.0.0.zip
 
   release:
     needs: [windows, linux, macos]
@@ -97,18 +100,18 @@ jobs:
           pattern: release-*
           path: release-assets
           merge-multiple: true
-      - name: Publish v1.2.0
+      - name: Publish v2.0.0
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.2.0
+          tag_name: v2.0.0
           target_commitish: main
-          name: Aqua Focus v1.2.0
+          name: Aqua Focus v2.0.0
           make_latest: true
-          generate_release_notes: true
+          body_path: docs/release/v2.0.0.md
           fail_on_unmatched_files: true
           files: |
-            release-assets/AquaFocusSetup-1.2.0.exe
-            release-assets/AquaFocus-Windows-Portable-1.2.0.zip
-            release-assets/AquaFocus-macOS-1.2.0.zip
-            release-assets/AquaFocus-Linux-Portable-1.2.0.tar.gz
-            release-assets/AquaFocus-Ubuntu-Portable-1.2.0.tar.gz
+            release-assets/AquaFocusSetup-2.0.0.exe
+            release-assets/AquaFocus-Windows-Portable-2.0.0.zip
+            release-assets/AquaFocus-macOS-2.0.0.zip
+            release-assets/AquaFocus-Linux-Portable-2.0.0.tar.gz
+            release-assets/AquaFocus-Ubuntu-Portable-2.0.0.tar.gz
