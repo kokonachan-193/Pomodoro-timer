@@ -8,6 +8,7 @@ on:
       - "main.py"
       - "v2_experience.py"
       - "v2_workspace.py"
+      - "v2_minimal.py"
       - "extensions/**"
       - "docs/release/**"
       - "i18n.py"
@@ -39,7 +40,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Python syntax check
-        run: python -m py_compile main.py i18n.py agiu.py settings_store.py v2_experience.py v2_workspace.py
+        run: python -m py_compile main.py i18n.py agiu.py settings_store.py v2_experience.py v2_workspace.py v2_minimal.py
       - name: Install Inno Setup
         shell: powershell
         run: choco install innosetup -y --no-progress
@@ -62,7 +63,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Python syntax check
-        run: python -m py_compile main.py i18n.py agiu.py settings_store.py v2_experience.py v2_workspace.py
+        run: python -m py_compile main.py i18n.py agiu.py settings_store.py v2_experience.py v2_workspace.py v2_minimal.py
       - run: sudo apt-get update && sudo apt-get install -y python3-tk libportaudio2 portaudio19-dev
       - name: Build Linux / Ubuntu
         run: |
@@ -82,7 +83,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Python syntax check
-        run: python -m py_compile main.py i18n.py agiu.py settings_store.py v2_experience.py v2_workspace.py
+        run: python -m py_compile main.py i18n.py agiu.py settings_store.py v2_experience.py v2_workspace.py v2_minimal.py
       - name: Build macOS
         run: |
           chmod +x scripts/build_unix.sh scripts/make_release_unix.sh
