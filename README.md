@@ -12,7 +12,7 @@
 <p align="center">
   <a href="README.ja.md">日本語</a>
   ·
-  <b>v2.1.3</b>
+  <b>v2.1.4</b>
   ·
   Windows · macOS · Ubuntu · Linux · Android
 </p>
@@ -25,17 +25,17 @@ No build required. Download the package for your platform from the GitHub Releas
 
 | Platform | Package | Run |
 | :--- | :--- | :--- |
-| **Windows 10 / 11** | `AquaFocusSetup-2.1.3.exe` | Installer · recommended |
-| **Windows** | `AquaFocus-Windows-Portable-2.1.3.zip` | Unzip → `AquaFocus.exe` |
-| **macOS** | `AquaFocus-macOS-2.1.3.zip` | Unzip → `AquaFocus.app` |
-| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.1.3.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
-| **Android 8+** | `AquaFocus-Android-2.1.3.apk` | Install the APK |
+| **Windows 10 / 11** | `AquaFocusSetup-2.1.4.exe` | Installer · recommended |
+| **Windows** | `AquaFocus-Windows-Portable-2.1.4.zip` | Unzip → `AquaFocus.exe` |
+| **macOS** | `AquaFocus-macOS-2.1.4.zip` | Unzip → `AquaFocus.app` |
+| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.1.4.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
+| **Android 8+** | `AquaFocus-Android-2.1.4.apk` | Install the APK |
 
 ffmpeg is **bundled** on desktop. Existing desktop installs can check GitHub Releases through **AGIU**.
 
 ---
 
-## What’s new in 2.1.3
+## What’s new in 2.1.4
 
 - **Full dashboard restored** — the feature-complete Aqua Focus home is the default again instead of the overly sparse minimal shell
 - **Features stay visible** — Quick Dive, timer rhythm, custom timing, intention, music, playlist controls, volume and primary actions remain directly accessible
