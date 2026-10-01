@@ -2,11 +2,6 @@ name: release-metadata
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - "docs/release/v2.1.0.md"
-      - ".github/workflows/release-metadata.yml"
 
 permissions:
   contents: write
