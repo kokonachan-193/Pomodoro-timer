@@ -2999,22 +2999,29 @@ class WaterTimer(ctk.CTk):
         short = height < 650
 
         # Sidebar is preserved in memory and simply disclosed through ••• on
-        # compact windows. This avoids the CTkScrollableFrame destroy/recreate
-        # lifecycle that caused stale Tcl widget handles.
-        if compact != self._dashboard_compact:
-            try:
-                if compact:
+        # compact windows. Never destroy it: several legacy feature surfaces are
+        # intentionally backed by these widgets.
+        try:
+            if compact:
+                if self.sidebar.winfo_ismapped():
                     self.sidebar.pack_forget()
-                else:
-                    self.sidebar.pack(side="left", fill="y", padx=(12, 0), pady=12, before=self.setup_frame)
-            except Exception:
-                pass
-            self._dashboard_compact = compact
+            else:
+                # Reassert visibility on every non-compact layout. This also
+                # repairs states left behind by the old minimal/advanced shell.
+                if not self.sidebar.winfo_ismapped():
+                    self.sidebar.pack(side="left", fill="y", padx=(12, 0), pady=12)
+        except Exception:
+            pass
+        self._dashboard_compact = compact
 
         try:
-            side_gap = 8 if very_compact else (12 if compact else 20)
+            side_gap = 8 if very_compact else (12 if compact else 16)
             outer_right = 8 if very_compact else 12
             self.setup_frame.pack_configure(padx=(side_gap, outer_right), pady=8 if short else 12)
+            # Give large displays a real workspace instead of a phone-width
+            # column floating in the middle of an ultrawide monitor.
+            target_width = width - (300 if not compact else 24)
+            self.setup_frame.configure(width=max(460, min(1180, target_width)))
         except Exception:
             pass
 
@@ -3035,7 +3042,7 @@ class WaterTimer(ctk.CTk):
 
         # Do not let ultrawide monitors turn every card into a giant strip.
         # Larger screens receive breathing room instead of larger cognitive load.
-        card_pad = 2 if very_compact else (6 if compact else (52 if ultrawide else (28 if wide else 0)))
+        card_pad = 2 if very_compact else (6 if compact else (12 if ultrawide else (8 if wide else 0)))
         for panel in (
             getattr(self, "ocean_hero", None),
             getattr(self, "mode_launcher", None),
@@ -3144,11 +3151,11 @@ class WaterTimer(ctk.CTk):
         if not hasattr(self, "rhythm_canvas"):
             return
         try:
-            w = float(self.entry_work.get() or 25)
-            b = float(self.entry_break.get() or 5)
-            lb = float(self.entry_long_break.get() or 15)
-            every = max(1, int(float(self.entry_long_every.get() or 4)))
-        except ValueError:
+            w = float(self._read_entry_view("entry_work", max(1.0, getattr(self, "work_time", 1500) / 60.0)) or 25)
+            b = float(self._read_entry_view("entry_break", max(0.0, getattr(self, "break_time", 300) / 60.0)) or 5)
+            lb = float(self._read_entry_view("entry_long_break", max(0.0, getattr(self, "long_break_time", 900) / 60.0)) or 15)
+            every = max(1, int(float(self._read_entry_view("entry_long_every", getattr(self, "long_break_every", 4)) or 4)))
+        except (TypeError, ValueError):
             return
         try:
             self.rhythm_canvas.update_idletasks()
