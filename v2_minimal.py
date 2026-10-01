@@ -53,9 +53,9 @@ class MinimalShell:
 
         # generous outer gutter: avoids the "admin dashboard" look
         shell = ctk.CTkFrame(self.surface, fg_color="transparent")
-        shell.pack(fill="both", expand=True, padx=42, pady=30)
+        shell.pack(fill="both", expand=True, padx=30, pady=22)
 
-        top = ctk.CTkFrame(shell, fg_color="transparent", height=48)
+        top = ctk.CTkFrame(shell, fg_color="transparent", height=44)
         top.pack(fill="x")
         top.pack_propagate(False)
 
@@ -78,38 +78,41 @@ class MinimalShell:
         self._quiet_button(top_actions, "•••", self.open_tools, width=44).pack(side="left", padx=3)
         self._quiet_button(top_actions, "Settings", self.open_settings, width=84).pack(side="left", padx=(3, 0))
 
-        # Main content deliberately leaves large empty areas.
+        # Responsive content: never use absolute placement here.
+        # Fixed place() coordinates caused the card to be clipped on smaller
+        # windows and Windows DPI scaling.
         center = ctk.CTkFrame(shell, fg_color="transparent")
-        center.pack(fill="both", expand=True, pady=(26, 0))
+        center.pack(fill="both", expand=True, pady=(10, 0))
 
         focus_card = ctk.CTkFrame(
             center,
-            width=700,
+            width=660,
             fg_color=t.sidebar,
-            corner_radius=32,
+            corner_radius=28,
             border_width=1,
             border_color=self._blend(t.bg, t.glow, 0.78),
         )
-        focus_card.place(relx=0.5, rely=0.44, anchor="center")
+        focus_card.pack(anchor="n", pady=(14, 0))
+        focus_card.pack_propagate(True)
         focus_card.grid_columnconfigure(0, weight=1)
 
         eyebrow = ctk.CTkLabel(
-            focus_card, text="READY TO DIVE",
-            font=ctk.CTkFont(family=a.FONT_UI_BOLD, size=10, weight="bold"),
+            focus_card, text="FOCUS SESSION",
+            font=ctk.CTkFont(family=a.FONT_UI_BOLD, size=9, weight="bold"),
             text_color=t.accent,
         )
-        eyebrow.grid(row=0, column=0, padx=42, pady=(34, 7), sticky="w")
+        eyebrow.grid(row=0, column=0, padx=34, pady=(26, 5), sticky="w")
 
         ctk.CTkLabel(
-            focus_card, text="What deserves your attention?",
-            font=ctk.CTkFont(family=a.FONT_UI_BOLD, size=25, weight="bold"),
+            focus_card, text="What will you finish?",
+            font=ctk.CTkFont(family=a.FONT_UI_BOLD, size=23, weight="bold"),
             text_color=t.text,
-        ).grid(row=1, column=0, padx=42, sticky="w")
+        ).grid(row=1, column=0, padx=34, sticky="w")
 
         self.intent_entry = ctk.CTkEntry(
             focus_card,
-            height=54,
-            corner_radius=18,
+            height=48,
+            corner_radius=15,
             border_width=1,
             border_color=self._blend(t.glow, t.accent, 0.28),
             fg_color=self._blend(t.sidebar, t.bg, 0.25),
@@ -117,7 +120,7 @@ class MinimalShell:
             placeholder_text="Write one concrete next action",
             font=ctk.CTkFont(size=14),
         )
-        self.intent_entry.grid(row=2, column=0, padx=42, pady=(18, 24), sticky="ew")
+        self.intent_entry.grid(row=2, column=0, padx=34, pady=(14, 18), sticky="ew")
         self.intent_entry.bind("<Return>", lambda _event: self.start_focus())
         try:
             existing = a.entry_intention.get().strip()
@@ -127,7 +130,7 @@ class MinimalShell:
             pass
 
         duration_area = ctk.CTkFrame(focus_card, fg_color="transparent")
-        duration_area.grid(row=3, column=0, padx=42, sticky="ew")
+        duration_area.grid(row=3, column=0, padx=34, sticky="ew")
         ctk.CTkLabel(
             duration_area, text="Session",
             font=ctk.CTkFont(size=11), text_color=t.muted,
@@ -139,9 +142,9 @@ class MinimalShell:
             b = ctk.CTkButton(
                 chips,
                 text=f"{key} min",
-                width=78,
-                height=36,
-                corner_radius=18,
+                width=74,
+                height=34,
+                corner_radius=17,
                 border_width=1,
                 font=ctk.CTkFont(size=11, weight="bold"),
                 command=lambda k=key: self.select_duration(k),
@@ -152,26 +155,26 @@ class MinimalShell:
         self.duration_label = ctk.CTkLabel(
             focus_card,
             text="50:00",
-            font=ctk.CTkFont(family=a.FONT_UI_BOLD, size=68, weight="bold"),
+            font=ctk.CTkFont(family=a.FONT_UI_BOLD, size=60, weight="bold"),
             text_color=t.text,
         )
-        self.duration_label.grid(row=4, column=0, pady=(24, 0))
+        self.duration_label.grid(row=4, column=0, pady=(16, 0))
 
         ctk.CTkLabel(
             focus_card,
             text="A calm 50 / 10 rhythm",
             font=ctk.CTkFont(size=11),
             text_color=t.muted,
-        ).grid(row=5, column=0, pady=(0, 20))
+        ).grid(row=5, column=0, pady=(0, 12))
 
         # Secondary information stays collapsed.
         sound_row = ctk.CTkFrame(focus_card, fg_color="transparent")
-        sound_row.grid(row=6, column=0, padx=42, sticky="ew")
+        sound_row.grid(row=6, column=0, padx=34, sticky="ew")
         self.sound_button = ctk.CTkButton(
             sound_row,
             text="Sound  ·  optional",
-            height=36,
-            corner_radius=18,
+            height=32,
+            corner_radius=16,
             fg_color="transparent",
             hover_color=t.glow,
             border_width=0,
@@ -186,15 +189,15 @@ class MinimalShell:
         self.start_button = ctk.CTkButton(
             focus_card,
             text="Start focus",
-            height=58,
-            corner_radius=22,
+            height=52,
+            corner_radius=18,
             fg_color=t.accent,
             hover_color=t.accent_hover,
             text_color="#071116",
             font=ctk.CTkFont(family=a.FONT_UI_BOLD, size=16, weight="bold"),
             command=self.start_focus,
         )
-        self.start_button.grid(row=8, column=0, padx=42, pady=(22, 36), sticky="ew")
+        self.start_button.grid(row=8, column=0, padx=34, pady=(14, 24), sticky="ew")
 
         # Tiny status line below the focus card.
         self.today_label = ctk.CTkLabel(
@@ -203,7 +206,7 @@ class MinimalShell:
             font=ctk.CTkFont(size=10),
             text_color=t.muted,
         )
-        self.today_label.place(relx=0.5, rely=0.89, anchor="center")
+        self.today_label.pack(pady=(12, 0))
 
         self.select_duration(self.selected if self.selected in self.PRESETS else "50")
         a._v3_focus = True
@@ -299,7 +302,7 @@ class MinimalShell:
             font=ctk.CTkFont(size=10), text_color=t.muted,
         ).pack(side="right")
 
-        self.sound_drawer.grid(row=7, column=0, padx=42, sticky="ew")
+        self.sound_drawer.grid(row=7, column=0, padx=34, sticky="ew")
         self.sound_button.configure(text="Sound  ·  hide")
         self._sound_open = True
 
