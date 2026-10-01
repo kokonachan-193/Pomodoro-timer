@@ -495,6 +495,23 @@ def resolve_output_device_index(
                 return idx
     return None
 
+def default_output_audio_device() -> tuple[int, str] | None:
+    """Return the PortAudio default output, falling back to the first usable device."""
+    devices = list_output_audio_devices()
+    if not devices:
+        return None
+    if sd is not None:
+        try:
+            raw = sd.default.device
+            idx = int(raw[1] if isinstance(raw, (tuple, list)) else raw)
+            for dev_idx, label in devices:
+                if dev_idx == idx:
+                    return dev_idx, label
+        except Exception:
+            pass
+    return devices[0]
+
+
 
 # Cloud stream player (no full download)
 
@@ -979,41 +996,58 @@ class MusicController:
             except Exception:
                 pass
 
-    def _resolve_youtube_stream_url(self) -> str:
-        if yt_dlp is None:
-            raise RuntimeError("yt-dlp が必要です")
-        ydl_opts = {
+    def _youtube_ydl_options(self, *, search: bool = False, download: bool = False) -> dict:
+        """Harden yt-dlp for packaged playback with retries and client fallback."""
+        opts: dict = {
             "format": "bestaudio/best",
             "quiet": True,
             "no_warnings": True,
             "noprogress": True,
+            "retries": 5,
+            "fragment_retries": 5,
+            "socket_timeout": 20,
+            "http_headers": {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+                "Accept-Language": "ja,en-US;q=0.9,en;q=0.8",
+            },
         }
+        if search:
+            opts["default_search"] = "ytsearch1"
+        if download:
+            opts["overwrites"] = True
         ffmpeg = resolve_ffmpeg_exe()
         if ffmpeg:
-            ydl_opts["ffmpeg_location"] = ffmpeg
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(self.url, download=False)
-            if info.get("entries"):
-                info = info["entries"][0] or info
-            media = info.get("url")
-            if not media:
-                raise RuntimeError("YouTube ストリーム URL を取得できませんでした")
-            self.stream_url = media
-            self.meta_title = (info.get("title") or self.meta_title or "YouTube Track").strip()
-            self.meta_artist = (
-                info.get("artist")
-                or info.get("uploader")
-                or info.get("channel")
-                or self.meta_artist
-                or "YouTube"
-            ).strip()
-            thumb = (
-                info.get("thumbnail")
-                or (info.get("thumbnails") or [{}])[-1].get("url")
-            )
-            if thumb:
-                self.thumbnail_url = thumb
-            return media
+            opts["ffmpeg_location"] = ffmpeg
+        return opts
+
+    def _extract_youtube_info(self, target: str, *, search: bool = False, download: bool = False) -> dict:
+        if yt_dlp is None:
+            raise RuntimeError("yt-dlp が必要です")
+        last_exc: Exception | None = None
+        for clients in (["android", "ios", "tv", "web"], ["web", "mweb", "android"], ["android_vr", "tv", "web"]):
+            opts = self._youtube_ydl_options(search=search, download=download)
+            opts["extractor_args"] = {"youtube": {"player_client": clients}}
+            try:
+                with yt_dlp.YoutubeDL(opts) as ydl:
+                    return ydl.extract_info(target, download=download)
+            except Exception as exc:
+                last_exc = exc
+        raise RuntimeError(f"yt-dlp で音源を取得できませんでした: {last_exc}")
+
+    def _resolve_youtube_stream_url(self) -> str:
+        info = self._extract_youtube_info(self.url, download=False)
+        if info.get("entries"):
+            info = info["entries"][0] or info
+        media = info.get("url")
+        if not media:
+            raise RuntimeError("YouTube ストリーム URL を取得できませんでした")
+        self.stream_url = media
+        self.meta_title = (info.get("title") or self.meta_title or "YouTube Track").strip()
+        self.meta_artist = (info.get("artist") or info.get("uploader") or info.get("channel") or self.meta_artist or "YouTube").strip()
+        thumb = info.get("thumbnail") or (info.get("thumbnails") or [{}])[-1].get("url")
+        if thumb:
+            self.thumbnail_url = thumb
+        return media
 
     def _fetch_spotify_metadata(self) -> None:
         """Use Spotify oEmbed (+ light OG fallback) for title + cover art."""
@@ -1143,29 +1177,17 @@ class MusicController:
         search = f"ytsearch1:{query}"
         self._notify(f"対応音源を検索中… {query[:40]}")
 
-        ydl_opts = {
-            "format": "bestaudio/best",
-            "quiet": True,
-            "no_warnings": True,
-            "noprogress": True,
-            "default_search": "ytsearch1",
-        }
-        ffmpeg = resolve_ffmpeg_exe()
-        if ffmpeg:
-            ydl_opts["ffmpeg_location"] = ffmpeg
-
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(search, download=False)
-            if info.get("entries"):
-                info = info["entries"][0] or {}
-            media = info.get("url")
-            if not media:
-                raise RuntimeError("Spotify 曲の再生用ストリームが見つかりませんでした")
-            page = info.get("webpage_url") or info.get("original_url")
-            if page:
-                self._yt_match_url = page
-            self.stream_url = media
-            return media
+        info = self._extract_youtube_info(search, search=True, download=False)
+        if info.get("entries"):
+            info = info["entries"][0] or {}
+        media = info.get("url")
+        if not media:
+            raise RuntimeError("Spotify 曲の再生用ストリームが見つかりませんでした")
+        page = info.get("webpage_url") or info.get("original_url")
+        if page:
+            self._yt_match_url = page
+        self.stream_url = media
+        return media
 
     def _resolve_stream_url(self) -> str:
         if self.kind == "direct":
@@ -1373,8 +1395,12 @@ class MusicController:
         if self._is_playing and not self._paused:
             return
         if self._output_device_index is None:
-            self._notify("音声出力デバイスを選択してください")
-            return
+            default_dev = default_output_audio_device()
+            if default_dev is None:
+                self._notify("利用できる音声出力デバイスが見つかりません")
+                return
+            self.set_output_device(default_dev[0], default_dev[1])
+            self._notify(f"♪ 既定の音声出力を使用: {default_dev[1].split('  ·  ')[0][:40]}")
 
         if not self._ready:
             self._notify("音楽の準備ができていません")
@@ -1490,13 +1516,13 @@ class WaterTimer(ctk.CTk):
         super().__init__()
         init_ui_fonts()
         self.title("Aqua Focus")
-        self.geometry("920x640")
-        self.minsize(780, 560)
+        self.geometry("1040x700")
+        self.minsize(860, 600)
         apply_window_icon(self)
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
         
-        self.theme = THEMES["Ocean Depth"]
+        self.theme = THEMES["Slate Modern"]
         self.is_running = False
         self.is_paused = False
         self.phase1 = 0.0
