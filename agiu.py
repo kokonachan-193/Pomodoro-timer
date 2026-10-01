@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Callable
 
 APP_NAME = "Aqua Focus"
-APP_VERSION = "2.1.2"
+APP_VERSION = "2.1.3"
 GITHUB_OWNER = "kokonachan-193"
 GITHUB_REPO = "Pomodoro-timer"
 API_LATEST = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/releases/latest"
