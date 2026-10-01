@@ -320,6 +320,24 @@ class MinimalShell:
         a._calm_focus = True
         a.start_immersive_timer()
 
+
+    def refresh_theme(self):
+        """Rebuild the visible shell after a theme change; legacy controls stay hidden."""
+        if self.surface is not None:
+            try:
+                self.surface.destroy()
+            except Exception:
+                pass
+        self.surface = None
+        self.duration_buttons = {}
+        self.intent_entry = None
+        self.music_entry = None
+        self.start_button = None
+        self.duration_label = None
+        self.sound_drawer = None
+        self._sound_open = False
+        self.install()
+
     # ------------------------------------------------------------ focus screen
     def place_focus_chrome(self):
         a = self.app
