@@ -250,6 +250,21 @@ class Theme:
 
 
 THEMES: dict[str, Theme] = {
+    "Abyss Glass": Theme(
+        name="Abyss Glass",
+        bg="#071319",
+        sidebar="#0b1b22",
+        accent="#63d8cf",
+        accent_hover="#4fc2ba",
+        wave_back_work="#12333b",
+        wave_front_work="#63d8cf",
+        wave_back_break="#15352f",
+        wave_front_break="#7ad9b5",
+        particle="#b9e9e5",
+        glow="#173740",
+        text="#eef7f6",
+        muted="#829ba1",
+    ),
     "Ocean Depth": Theme(
         name="Ocean Depth",
         bg="#061722",
@@ -1610,7 +1625,7 @@ class WaterTimer(ctk.CTk):
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
         
-        self.theme = THEMES["Slate Modern"]
+        self.theme = THEMES["Abyss Glass"]
         self.is_running = False
         self.is_paused = False
         self.phase1 = 0.0
