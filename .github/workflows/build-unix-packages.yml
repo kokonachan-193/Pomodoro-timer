@@ -94,6 +94,7 @@ jobs:
           path: dist/releases/AquaFocus-macOS-2.1.4.zip
 
   release:
+    if: github.event_name == 'workflow_dispatch'
     needs: [windows, linux, macos]
     runs-on: ubuntu-latest
     steps:
