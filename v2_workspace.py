@@ -296,12 +296,12 @@ class WorkspacePanels:
         t = self._theme()
         ctk.CTkLabel(
             parent, text=title,
-            font=ctk.CTkFont(family=self.font_bold, size=28),
+            font=ctk.CTkFont(family=self.font_bold, size=30),
             text_color=t.text,
         ).pack(anchor="w", padx=24, pady=(22, 2))
         ctk.CTkLabel(
             parent, text=subtitle,
-            font=ctk.CTkFont(family=self.font_family, size=12),
+            font=ctk.CTkFont(family=self.font_family, size=13),
             text_color=t.muted,
         ).pack(anchor="w", padx=24, pady=(0, 16))
 
@@ -310,9 +310,15 @@ class WorkspacePanels:
         win = self._window("Aqua Focus · Coral Tasks")
         self._heading(win, "Coral Tasks", "Keep today's work small, visible and connected to focus time.")
 
-        composer = ctk.CTkFrame(win, fg_color=t.sidebar, corner_radius=18, border_width=1, border_color=t.glow)
+        composer = ctk.CTkFrame(win, fg_color=t.sidebar, corner_radius=18, border_width=2, border_color=t.glow)
         composer.pack(fill="x", padx=24, pady=(0, 10))
-        entry = ctk.CTkEntry(composer, height=42, placeholder_text="What is the next concrete task?")
+        entry = ctk.CTkEntry(
+            composer, height=46,
+            placeholder_text="What is the next concrete task?",
+            font=ctk.CTkFont(family=self.font_family, size=13),
+            text_color=t.text,
+            border_color=t.glow,
+        )
         entry.pack(side="left", fill="x", expand=True, padx=(14, 8), pady=14)
 
         body = ctk.CTkScrollableFrame(win, fg_color="transparent")
@@ -332,6 +338,7 @@ class WorkspacePanels:
                     row,
                     text=item.title,
                     text_color=t.muted if item.done else t.text,
+                    font=ctk.CTkFont(family=self.font_family, size=13),
                     progress_color=t.accent,
                     command=lambda task_id=item.id: (self.tasks.toggle(task_id), render()),
                 )
@@ -341,7 +348,8 @@ class WorkspacePanels:
                 ctk.CTkLabel(
                     row,
                     text=f"{item.focused_minutes:.0f}m",
-                    width=54,
+                    width=64,
+                    font=ctk.CTkFont(family=self.font_bold, size=12),
                     text_color=t.accent if item.focused_minutes > 0 else t.muted,
                 ).pack(side="left")
                 if not item.done:
@@ -370,7 +378,8 @@ class WorkspacePanels:
                 render()
 
         ctk.CTkButton(
-            composer, text="ADD", width=76, height=42,
+            composer, text="ADD", width=86, height=46,
+            font=ctk.CTkFont(family=self.font_bold, size=12),
             fg_color=t.accent, hover_color=t.accent_hover, command=add,
         ).pack(side="right", padx=(0, 14), pady=14)
         entry.bind("<Return>", lambda _e: add())
@@ -403,7 +412,7 @@ class WorkspacePanels:
             ("ALL TIME", self.stats.total_minutes()),
         ]
         for title, minutes in values:
-            card = ctk.CTkFrame(cards, fg_color=t.sidebar, corner_radius=18, border_width=1, border_color=t.glow)
+            card = ctk.CTkFrame(cards, fg_color=t.sidebar, corner_radius=18, border_width=2, border_color=t.glow)
             card.pack(side="left", fill="x", expand=True, padx=6)
             ctk.CTkLabel(card, text=title, text_color=t.muted, font=ctk.CTkFont(size=10)).pack(pady=(14, 2))
             ctk.CTkLabel(
@@ -447,6 +456,7 @@ class WorkspacePanels:
                 box,
                 text=f"{when}   {float(row.get('minutes',0)):.0f} min   ·   {label}",
                 text_color=t.text,
+                font=ctk.CTkFont(family=self.font_family, size=12),
                 anchor="w",
             ).pack(fill="x", padx=8, pady=4)
 
@@ -456,7 +466,10 @@ class WorkspacePanels:
         self._heading(win, "Ocean Soundscape", "A second ambient layer that can sit quietly beneath your music.")
 
         selected = tk.StringVar(value=self.ambient.kind)
-        status = ctk.CTkLabel(win, text="Stopped", text_color=t.muted)
+        status = ctk.CTkLabel(
+            win, text="Stopped", text_color=t.text,
+            font=ctk.CTkFont(family=self.font_bold, size=12),
+        )
         status.pack(anchor="w", padx=26, pady=(0, 8))
 
         modes = ctk.CTkFrame(win, fg_color="transparent")
@@ -494,7 +507,10 @@ class WorkspacePanels:
         win = self._window("Aqua Focus · Reef Extensions", "800x640")
         self._heading(win, "Reef Extensions", "Install curated themes, sound profiles and focus presets from the Aqua catalog.")
 
-        status = ctk.CTkLabel(win, text="Loading catalog…", text_color=t.muted)
+        status = ctk.CTkLabel(
+            win, text="Loading catalog…", text_color=t.text,
+            font=ctk.CTkFont(family=self.font_bold, size=12),
+        )
         status.pack(anchor="w", padx=26, pady=(0, 8))
         body = ctk.CTkScrollableFrame(win, fg_color="transparent")
         body.pack(fill="both", expand=True, padx=18, pady=(0,18))
