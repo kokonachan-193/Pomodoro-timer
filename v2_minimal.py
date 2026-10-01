@@ -680,6 +680,7 @@ class MinimalShell:
 
         groups = (
             ("FOCUS TOOLS", (
+                ("Deep Dive", "90-minute low-distraction focus", a.start_deep_dive_mode),
                 ("Custom session", "Choose your own work / break rhythm", self.open_custom_session),
                 ("Countdown", "A single timer", a.v2_modes.open_countdown),
                 ("Stopwatch", "Open-ended flow", a.v2_modes.open_stopwatch),
@@ -729,6 +730,30 @@ class MinimalShell:
             placeholder_text="YouTube / Spotify / direct audio URL",
         )
         url.pack(side="left", fill="x", expand=True, padx=(0, 8))
+
+        transport = ctk.CTkFrame(w, fg_color="transparent")
+        transport.pack(fill="x", padx=24, pady=(0, 10))
+        ctk.CTkButton(
+            transport, text="← Previous", width=92, height=34,
+            fg_color=t.sidebar, hover_color=t.glow,
+            border_width=1, border_color=t.glow,
+            command=a.playlist_prev_track,
+        ).pack(side="left", padx=(0, 6))
+        ctk.CTkButton(
+            transport, text="Next →", width=92, height=34,
+            fg_color=t.sidebar, hover_color=t.glow,
+            border_width=1, border_color=t.glow,
+            command=a.playlist_next_track,
+        ).pack(side="left", padx=6)
+        continuous = ctk.BooleanVar(value=bool(a.playlist.continuous))
+        def set_continuous():
+            a.playlist.continuous = bool(continuous.get())
+            a.playlist.save()
+        ctk.CTkSwitch(
+            transport, text="Continuous", variable=continuous,
+            command=set_continuous, progress_color=t.accent,
+            text_color=t.muted,
+        ).pack(side="right")
 
         body = ctk.CTkScrollableFrame(w, fg_color="transparent")
         body.pack(fill="both", expand=True, padx=18, pady=(0, 18))
