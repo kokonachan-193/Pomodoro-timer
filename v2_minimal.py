@@ -48,27 +48,26 @@ class MinimalShell:
         a = self.app
         t = a.theme
 
-        # Idempotent install: a theme refresh or startup path must never leave
-        # two Home surfaces stacked in the same container.
+        # Idempotent install: only destroy the Home surface that *we* own.
+        #
+        # Important: do NOT walk main_container.winfo_children() and destroy
+        # everything except sidebar/setup_frame.  CTkScrollableFrame is backed
+        # by internal wrapper widgets, so the object returned by winfo_children()
+        # is not guaranteed to be the same Python object as setup_frame/sidebar.
+        # Destroying that wrapper leaves references such as entry_work alive in
+        # Python while the underlying Tk command is already gone, which later
+        # raises: TclError: invalid command name "...!ctkentry.!entry".
         if self.surface is not None:
             try:
-                self.surface.destroy()
+                if self.surface.winfo_exists():
+                    self.surface.destroy()
             except Exception:
                 pass
             self.surface = None
-        try:
-            keep = {getattr(a, "sidebar", None), getattr(a, "setup_frame", None)}
-            for child in list(a.main_container.winfo_children()):
-                if child not in keep:
-                    try:
-                        child.destroy()
-                    except Exception:
-                        pass
-        except Exception:
-            pass
 
-        # Legacy UI remains alive because timer/audio logic still references it,
-        # but it no longer competes with the user.
+        # The legacy control surface is the compatibility/backend UI for a large
+        # amount of timer, audio, focus-lock and update logic.  Keep it alive and
+        # merely hide it.  "Full controls" can reveal the exact same widgets.
         for widget in (getattr(a, "sidebar", None), getattr(a, "setup_frame", None)):
             if widget is not None:
                 try:
@@ -83,7 +82,7 @@ class MinimalShell:
         # utility.  The legacy app used 940x640 as its minimum which meant the
         # new compact UI could never actually be compact.
         try:
-            a.minsize(560, 520)
+            a.minsize(500, 500)
         except Exception:
             pass
 
@@ -116,12 +115,12 @@ class MinimalShell:
         stats_btn = self._quiet_button(top_actions, "Stats", a.workspace.open_stats)
         tasks_btn = self._quiet_button(top_actions, "Tasks", a.workspace.open_tasks)
         tools_btn = self._quiet_button(top_actions, "•••", self.open_tools, width=44)
-        settings_btn = self._quiet_button(top_actions, "Settings", self.open_settings, width=84)
         stats_btn.pack(side="left", padx=3)
         tasks_btn.pack(side="left", padx=3)
-        tools_btn.pack(side="left", padx=3)
-        settings_btn.pack(side="left", padx=(3, 0))
-        self._top_buttons = [stats_btn, tasks_btn, tools_btn, settings_btn]
+        tools_btn.pack(side="left", padx=(3, 0))
+        # Settings stays available inside •••.  Keeping the Home header to three
+        # actions makes the layout calmer and prevents crowding at compact widths.
+        self._top_buttons = [stats_btn, tasks_btn, tools_btn]
 
         # Responsive content: never use absolute placement here.
         # Fixed place() coordinates caused the card to be clipped on smaller
@@ -330,10 +329,20 @@ class MinimalShell:
 
         # Keep the primary card inside the actual viewport.  A CTkFrame width is
         # otherwise allowed to stay at 660px and gets clipped by a smaller window.
-        target = int(w * (0.52 if compact else (0.42 if wide else 0.48)))
-        max_width = 900 if ultra else (820 if wide else 700)
-        card_width = min(max_width, max(360, target, min(660, w - (outer_x * 2) - 8)))
-        card_width = min(card_width, max(360, w - (outer_x * 2) - 8))
+        available = max(300, w - (outer_x * 2) - 8)
+        if very_compact:
+            target = available
+        elif compact:
+            target = int(available * 0.94)
+        elif ultra:
+            target = min(900, int(available * 0.48))
+        elif wide:
+            target = min(820, int(available * 0.52))
+        else:
+            target = min(700, int(available * 0.68))
+        # Never force a 360px card into a viewport that has less room.  The old
+        # clamp could still overflow on Windows DPI scaling / tiny windows.
+        card_width = max(300, min(target, available))
         try:
             self.focus_card.configure(width=card_width, corner_radius=22 if compact else 28)
         except Exception:
