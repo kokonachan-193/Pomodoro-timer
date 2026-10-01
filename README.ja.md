@@ -12,7 +12,7 @@
 <p align="center">
   <a href="README.md">English</a>
   ·
-  <b>v1.1.0</b>
+  <b>v1.2.0</b>
   ·
   Windows · macOS · Ubuntu · Linux
 </p>
@@ -25,10 +25,10 @@
 
 | プラットフォーム | パッケージ | 使い方 |
 | :--- | :--- | :--- |
-| **Windows 10 / 11** | `AquaFocusSetup-1.1.0.exe` | インストーラ（おすすめ） |
-| **Windows** | `AquaFocus-Windows-Portable-1.1.0.zip` | 解凍 → `AquaFocus.exe` |
-| **macOS** | `AquaFocus-macOS-1.1.0.zip` | 解凍 → `AquaFocus.app` |
-| **Ubuntu / Linux** | `AquaFocus-*-Portable-1.1.0.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
+| **Windows 10 / 11** | `AquaFocusSetup-1.2.0.exe` | インストーラ（おすすめ） |
+| **Windows** | `AquaFocus-Windows-Portable-1.2.0.zip` | 解凍 → `AquaFocus.exe` |
+| **macOS** | `AquaFocus-macOS-1.2.0.zip` | 解凍 → `AquaFocus.app` |
+| **Ubuntu / Linux** | `AquaFocus-*-Portable-1.2.0.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
 
 ffmpeg **同梱**。アプリ内 **AGIU** から GitHub Releases の更新を確認できます。
 
@@ -36,10 +36,10 @@ ffmpeg **同梱**。アプリ内 **AGIU** から GitHub Releases の更新を確
 
 ---
 
-## v1.1.0 の新機能
+## v1.2.0 の新機能
 
 - **AGIU** — GitHub Releases を見てインストール済みアプリを更新（全 OS パッケージ対応）
-- **音声出力** — 再生デバイスを自分で選択（自動選択なし）
+- **音声出力** — 未設定時は OS の既定出力へ自動フォールバック
 - クロスプラットフォーム配布: Windows · macOS · Linux / Ubuntu
 
 ---
