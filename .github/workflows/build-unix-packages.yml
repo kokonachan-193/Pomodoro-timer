@@ -9,6 +9,7 @@ on:
       - "v2_experience.py"
       - "v2_workspace.py"
       - "extensions/**"
+      - "docs/release/**"
       - "i18n.py"
       - "agiu.py"
       - "settings_store.py"
