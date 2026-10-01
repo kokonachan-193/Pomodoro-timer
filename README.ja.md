@@ -12,7 +12,7 @@
 <p align="center">
   <a href="README.md">English</a>
   ·
-  <b>v2.1.3</b>
+  <b>v2.1.4</b>
   ·
   Windows · macOS · Ubuntu · Linux · Android
 </p>
@@ -25,17 +25,17 @@ GitHub Release から使用するOS向けのパッケージを取得できます
 
 | プラットフォーム | パッケージ | 使い方 |
 | :--- | :--- | :--- |
-| **Windows 10 / 11** | `AquaFocusSetup-2.1.3.exe` | インストーラ · おすすめ |
-| **Windows** | `AquaFocus-Windows-Portable-2.1.3.zip` | 解凍 → `AquaFocus.exe` |
-| **macOS** | `AquaFocus-macOS-2.1.3.zip` | 解凍 → `AquaFocus.app` |
-| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.1.3.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
-| **Android 8+** | `AquaFocus-Android-2.1.3.apk` | APKをインストール |
+| **Windows 10 / 11** | `AquaFocusSetup-2.1.4.exe` | インストーラ · おすすめ |
+| **Windows** | `AquaFocus-Windows-Portable-2.1.4.zip` | 解凍 → `AquaFocus.exe` |
+| **macOS** | `AquaFocus-macOS-2.1.4.zip` | 解凍 → `AquaFocus.app` |
+| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.1.4.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
+| **Android 8+** | `AquaFocus-Android-2.1.4.apk` | APKをインストール |
 
 デスクトップ版は ffmpeg **同梱**。既存版は **AGIU** からGitHub Releasesの更新を確認できます。
 
 ---
 
-## v2.1.3 の新機能
+## v2.1.4 の新機能
 
 - **フルダッシュボードを復元** — 何もなさすぎたミニマル画面をやめ、機能が見えるAqua Focus本来のホームを再びデフォルトにしました
 - **機能を隠しすぎない構成** — Quick Dive、リズム、時間設定、目的、音楽、プレイリスト、音量、開始操作を直接触れます
