@@ -44,12 +44,12 @@ if (Test-Path -LiteralPath $iscc) {
         Write-Host "WARN: Setup not found at $built" -ForegroundColor Yellow
     }
 } else {
-    Write-Host "WARN: Inno Setup not found — portable zip only" -ForegroundColor Yellow
+    Write-Host "WARN: Inno Setup not found - portable zip only" -ForegroundColor Yellow
 }
 
 Write-Host ""
 Write-Host "Release assets ready:" -ForegroundColor Green
 Get-ChildItem $relDir | ForEach-Object { Write-Host ("  {0}  ({1:N1} MB)" -f $_.Name, ($_.Length/1MB)) }
 Write-Host ""
-Write-Host "Upload these on GitHub → Releases → New release (tag v$Version)"
+Write-Host "Upload these on GitHub -> Releases -> New release (tag v$Version)"
 Write-Host "  https://github.com/kokonachan-193/Pomodoro-timer/releases/new"
