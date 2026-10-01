@@ -3081,6 +3081,45 @@ class WaterTimer(ctk.CTk):
         except Exception:
             pass
 
+        # Timing controls are feature-complete, but should not become a cramped
+        # five-field spreadsheet on small windows. Reflow the existing widgets;
+        # never recreate them, so callbacks/state remain stable.
+        try:
+            primary_boxes = [
+                self.entry_work.master,
+                self.entry_break.master,
+                self.entry_cycles.master,
+            ]
+            primary_grid = primary_boxes[0].master
+            for col in range(3):
+                primary_grid.grid_columnconfigure(col, weight=0 if very_compact else 1)
+            primary_grid.grid_columnconfigure(0, weight=1)
+            for i, box in enumerate(primary_boxes):
+                if very_compact:
+                    box.grid_configure(row=i, column=0, padx=0, pady=(0, 8), sticky="ew")
+                else:
+                    box.grid_configure(row=0, column=i, padx=8, pady=0, sticky="ew")
+
+            secondary_boxes = [
+                self.entry_long_break.master,
+                self.entry_long_every.master,
+            ]
+            secondary_grid = secondary_boxes[0].master
+            for col in range(2):
+                secondary_grid.grid_columnconfigure(col, weight=0 if very_compact else 1)
+            secondary_grid.grid_columnconfigure(0, weight=1)
+            for i, box in enumerate(secondary_boxes):
+                if very_compact:
+                    box.grid_configure(row=i, column=0, padx=0, pady=(0, 8), sticky="ew")
+                else:
+                    box.grid_configure(row=0, column=i, padx=8, pady=0, sticky="ew")
+            if very_compact:
+                self.long_note_lbl.grid_configure(row=2, column=0, columnspan=1, sticky="w", pady=(2, 0))
+            else:
+                self.long_note_lbl.grid_configure(row=1, column=0, columnspan=2, sticky="w", pady=(8, 0))
+        except Exception:
+            pass
+
         try:
             self.dashboard_more_btn.configure(width=42 if compact else 44, height=34)
             for quick in (getattr(self, "dashboard_tasks_btn", None), getattr(self, "dashboard_stats_btn", None)):
@@ -5455,6 +5494,24 @@ if __name__ == "__main__":
                 app.geometry(f"{sw_i}x{sh_i}")
                 app.update_idletasks()
                 app.after(80, app._apply_dashboard_layout)
+
+        # CI-only focus preview. It exercises the real focus surface (including
+        # rising water, chrome and responsive placement) without changing normal
+        # launches or requiring a fake screenshot renderer.
+        if "--preview-focus" in sys.argv:
+            def _preview_focus():
+                try:
+                    app.start_immersive_timer()
+                    # Show a meaningful in-progress water level instead of the
+                    # initial frame, while keeping the timer safely paused.
+                    app.remaining_seconds = max(1.0, app.total_seconds * 0.58)
+                    app.is_paused = True
+                    app.pause_btn.configure(text=app.t("resume"))
+                    app.draw_waves(frozen=True)
+                    app._reveal_chrome()
+                except Exception as exc:
+                    print(f"[preview-focus] {exc}", file=sys.stderr)
+            app.after(450, _preview_focus)
     except Exception:
         pass
 
