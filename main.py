@@ -530,10 +530,11 @@ class CloudAudioStreamer:
         self._pause = threading.Event()
         self._volume = 0.55
         self._device: int | None = None
-        self._resolve_url: Callable[[], str] | None = None
+        self._resolve_url: Callable[[], str | tuple[str, dict[str, str]]] | None = None
         self._loop = True
         self.playing = False
         self._on_natural_end: Callable[[], None] | None = None
+        self._on_error: Callable[[str], None] | None = None
 
     def set_volume(self, value: float) -> None:
         self._volume = max(0.0, min(1.0, float(value)))
@@ -543,9 +544,10 @@ class CloudAudioStreamer:
 
     def start(
         self,
-        resolve_url: Callable[[], str],
+        resolve_url: Callable[[], str | tuple[str, dict[str, str]]],
         loop: bool = True,
         on_natural_end: Callable[[], None] | None = None,
+        on_error: Callable[[str], None] | None = None,
     ) -> None:
         self.stop()
         ffmpeg = resolve_ffmpeg_exe()
@@ -559,6 +561,7 @@ class CloudAudioStreamer:
         self._resolve_url = resolve_url
         self._loop = loop
         self._on_natural_end = on_natural_end
+        self._on_error = on_error
         self._stop.clear()
         self._pause.clear()
         self._thread = threading.Thread(target=self._run, args=(ffmpeg,), daemon=True)
@@ -605,21 +608,43 @@ class CloudAudioStreamer:
         assert self._resolve_url is not None
         while not self._stop.is_set():
             try:
-                url = self._resolve_url()
+                source = self._resolve_url()
+                if isinstance(source, tuple):
+                    url, headers = source
+                else:
+                    url, headers = source, {}
             except Exception as exc:
-                self.status_cb(f"ストリーム URL 取得失敗: {exc}")
+                msg = f"ストリーム URL 取得失敗: {exc}"
+                self.status_cb(msg)
+                if self._on_error:
+                    self._on_error(msg)
                 break
             if not url:
-                self.status_cb("ストリーム URL が空です")
+                msg = "ストリーム URL が空です"
+                self.status_cb(msg)
+                if self._on_error:
+                    self._on_error(msg)
                 break
 
             cmd = [
                 ffmpeg,
                 "-hide_banner",
                 "-loglevel", "error",
+                "-nostdin",
                 "-reconnect", "1",
                 "-reconnect_streamed", "1",
                 "-reconnect_delay_max", "5",
+                "-rw_timeout", "15000000",
+            ]
+            if headers:
+                header_blob = "".join(
+                    f"{key}: {value}\r\n"
+                    for key, value in headers.items()
+                    if key and value
+                )
+                if header_blob:
+                    cmd.extend(["-headers", header_blob])
+            cmd.extend([
                 "-i", url,
                 "-vn",
                 "-f", "s16le",
@@ -627,12 +652,12 @@ class CloudAudioStreamer:
                 "-ar", str(self.SAMPLE_RATE),
                 "-ac", str(self.CHANNELS),
                 "pipe:1",
-            ]
+            ])
             try:
                 self._proc = subprocess.Popen(
                     cmd,
                     stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
                     bufsize=self.CHUNK_BYTES * 4,
                     **_subprocess_hidden_kwargs(),
                 )
@@ -852,6 +877,7 @@ class MusicController:
         self.url = ""
         self.kind: str | None = None  # "youtube" | "spotify" | "direct" | None
         self.stream_url: str | None = None  # resolved HTTP media URL
+        self.stream_headers: dict[str, str] = {}
         self.local_path: str | None = None  # fallback only
         self.meta_title: str = ""
         self.meta_artist: str = ""
@@ -862,6 +888,7 @@ class MusicController:
         self._loading = False
         self._is_playing = False
         self._paused = False
+        self._play_when_ready = False
         self._volume = 0.55
         self._use_stream = True
         self._mixer_ok = False
@@ -976,6 +1003,7 @@ class MusicController:
         self.url = url
         self.kind = self.detect_kind(url)
         self.stream_url = None
+        self.stream_headers = {}
         self.local_path = None
         self.meta_title = ""
         self.meta_artist = ""
@@ -999,8 +1027,9 @@ class MusicController:
     def _youtube_ydl_options(self, *, search: bool = False, download: bool = False) -> dict:
         """Harden yt-dlp for packaged playback with retries and client fallback."""
         opts: dict = {
-            "format": "bestaudio/best",
+            "format": "bestaudio[protocol^=http][acodec!=none]/bestaudio[acodec!=none]/bestaudio/best",
             "quiet": True,
+            "noplaylist": True,
             "no_warnings": True,
             "noprogress": True,
             "retries": 5,
@@ -1042,6 +1071,19 @@ class MusicController:
         if not media:
             raise RuntimeError("YouTube ストリーム URL を取得できませんでした")
         self.stream_url = media
+        headers = dict(info.get("http_headers") or {})
+        headers.setdefault(
+            "User-Agent",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        )
+        referer = info.get("webpage_url") or info.get("original_url") or self.url
+        if referer:
+            headers.setdefault("Referer", str(referer))
+        self.stream_headers = {
+            str(key): str(value) for key, value in headers.items()
+            if key and value is not None
+        }
         self.meta_title = (info.get("title") or self.meta_title or "YouTube Track").strip()
         self.meta_artist = (info.get("artist") or info.get("uploader") or info.get("channel") or self.meta_artist or "YouTube").strip()
         thumb = info.get("thumbnail") or (info.get("thumbnails") or [{}])[-1].get("url")
@@ -1187,10 +1229,25 @@ class MusicController:
         if page:
             self._yt_match_url = page
         self.stream_url = media
+        headers = dict(info.get("http_headers") or {})
+        headers.setdefault(
+            "User-Agent",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        )
+        if page:
+            headers.setdefault("Referer", str(page))
+        self.stream_headers = {
+            str(key): str(value) for key, value in headers.items()
+            if key and value is not None
+        }
         return media
 
     def _resolve_stream_url(self) -> str:
         if self.kind == "direct":
+            self.stream_headers = {
+                "User-Agent": "AquaFocus/1.2 (+https://github.com/kokonachan-193/Pomodoro-timer)"
+            }
             return self.url
         if self.kind == "youtube":
             return self._resolve_youtube_stream_url()
@@ -1212,6 +1269,24 @@ class MusicController:
                 return media
             return self._resolve_spotify_via_youtube()
         raise RuntimeError("ストリーム非対応の種別です")
+
+    def _resolve_stream_source(self) -> tuple[str, dict[str, str]]:
+        return self._resolve_stream_url(), dict(self.stream_headers)
+
+    def _on_stream_error(self, message: str) -> None:
+        if not self._use_stream:
+            return
+        self._use_stream = False
+        self._is_playing = False
+        self._paused = False
+        self._notify(f"{message} · ローカル再生へ切替中…")
+
+        def fallback() -> None:
+            time.sleep(0.15)
+            if self.url and self._ready:
+                self.play()
+
+        threading.Thread(target=fallback, daemon=True).start()
 
     def prepare_async(self, done_cb: Callable[[bool, str], None] | None = None) -> None:
         if not self.url or self.kind is None:
@@ -1278,8 +1353,13 @@ class MusicController:
                 ok, msg = False, str(exc)
             finally:
                 self._loading = False
+                should_play = ok and self._play_when_ready
+                if should_play:
+                    self._play_when_ready = False
                 if done_cb:
                     done_cb(ok, msg)
+                if should_play:
+                    threading.Thread(target=self.play, daemon=True).start()
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -1403,7 +1483,10 @@ class MusicController:
             self._notify(f"♪ 既定の音声出力を使用: {default_dev[1].split('  ·  ')[0][:40]}")
 
         if not self._ready:
-            self._notify("音楽の準備ができていません")
+            self._play_when_ready = True
+            self._notify("音楽を準備中…")
+            if not self._loading:
+                self.prepare_async()
             return
 
         if self._use_stream:
@@ -1416,9 +1499,10 @@ class MusicController:
                     return
                 self.streamer.set_volume(self._volume)
                 self.streamer.start(
-                    self._resolve_stream_url,
+                    self._resolve_stream_source,
                     loop=True,
                     on_natural_end=self._on_stream_natural_end,
+                    on_error=self._on_stream_error,
                 )
                 self._is_playing = True
                 self._paused = False
@@ -1476,6 +1560,7 @@ class MusicController:
         self.play()
 
     def stop(self) -> None:
+        self._play_when_ready = False
         self.streamer.stop()
         if self._mixer_ok and pygame is not None:
             try:
@@ -1516,8 +1601,8 @@ class WaterTimer(ctk.CTk):
         super().__init__()
         init_ui_fonts()
         self.title("Aqua Focus")
-        self.geometry("1040x700")
-        self.minsize(860, 600)
+        self.geometry("1180x780")
+        self.minsize(940, 640)
         apply_window_icon(self)
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
@@ -1949,9 +2034,17 @@ class WaterTimer(ctk.CTk):
         self.main_container = ctk.CTkFrame(self, fg_color="transparent")
         self.main_container.grid(row=0, column=0, sticky="nsew")
 
-        self.sidebar = ctk.CTkFrame(self.main_container, width=210, corner_radius=0, fg_color=self.theme.sidebar)
-        self.sidebar.pack(side="left", fill="y")
-        self.sidebar.pack_propagate(False)
+        self.sidebar = ctk.CTkScrollableFrame(
+            self.main_container,
+            width=232,
+            corner_radius=18,
+            fg_color=self.theme.sidebar,
+            border_width=1,
+            border_color=self.theme.glow,
+            scrollbar_button_color=self.theme.glow,
+            scrollbar_button_hover_color=self.theme.accent,
+        )
+        self.sidebar.pack(side="left", fill="y", padx=(12, 0), pady=12)
 
         ctk.CTkLabel(
             self.sidebar, text="Aqua Focus",
@@ -2130,7 +2223,7 @@ class WaterTimer(ctk.CTk):
             dropdown_fg_color=self.theme.sidebar,
             font=ctk.CTkFont(family=FONT_UI, size=12),
         )
-        self.theme_menu.set("Ocean Depth")
+        self.theme_menu.set(self.theme.name)
         self.theme_menu.pack(padx=14, fill="x")
 
         self.sidebar_bg = ctk.CTkLabel(
@@ -2165,12 +2258,18 @@ class WaterTimer(ctk.CTk):
         )
         self.bg_label.pack(padx=16, pady=(8, 0), anchor="w")
 
-        self.setup_frame = ctk.CTkFrame(self.main_container, fg_color="transparent")
-        self.setup_frame.pack(side="right", fill="both", expand=True, padx=36, pady=20)
+        self.setup_frame = ctk.CTkScrollableFrame(
+            self.main_container,
+            fg_color="transparent",
+            corner_radius=18,
+            scrollbar_button_color=self.theme.glow,
+            scrollbar_button_hover_color=self.theme.accent,
+        )
+        self.setup_frame.pack(side="right", fill="both", expand=True, padx=(20, 12), pady=12)
 
         self.hero_label = ctk.CTkLabel(
             self.setup_frame, text=self.t("timer_settings"),
-            font=ctk.CTkFont(family=FONT_UI_BOLD, size=30),
+            font=ctk.CTkFont(family=FONT_UI_BOLD, size=34),
             text_color=self.theme.text,
         )
         self.hero_label.pack(pady=(24, 6), anchor="w")
