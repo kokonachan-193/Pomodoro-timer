@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Build downloadable packages for macOS or Ubuntu/Linux (run ON that OS).
 # Output: dist/releases/
-#   macOS  -> AquaFocus-macOS-1.1.0.zip  (contains AquaFocus.app)
-#   Linux  -> AquaFocus-Linux-Portable-1.1.0.tar.gz
+#   macOS  -> AquaFocus-macOS-1.2.0.zip  (contains AquaFocus.app)
+#   Linux  -> AquaFocus-Linux-Portable-1.2.0.tar.gz
 
 set -euo pipefail
-VERSION="${VERSION:-1.1.0}"
+VERSION="${VERSION:-1.2.0}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
