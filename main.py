@@ -55,6 +55,7 @@ from i18n import I18n, PRESET_KEYS, TIP_KEYS, QUOTE_KEYS
 from settings_store import SettingsStore
 from v2_experience import OceanHero, AuxiliaryModes
 from v2_workspace import WorkspacePanels
+from v2_minimal import MinimalShell
 from agiu import (
     APP_VERSION,
     AgiuController,
@@ -1683,6 +1684,9 @@ class WaterTimer(ctk.CTk):
             font_family=FONT_UI,
             font_bold=FONT_UI_BOLD,
         )
+        self.THEMES = THEMES
+        self.FONT_UI_BOLD = FONT_UI_BOLD
+        self.minimal_shell = MinimalShell(self)
 
         self.configure(fg_color=self.theme.bg)
         self.setup_ui()
@@ -2708,6 +2712,9 @@ class WaterTimer(ctk.CTk):
 
         self.canvas.bind("<Motion>", self._reveal_chrome)
         self.wave_frame.bind("<Motion>", self._reveal_chrome)
+
+        # v2.1 default surface: keep advanced controls alive but out of sight.
+        self.minimal_shell.install()
 
     def _compact_input(self, parent, label_key: str, default: str, col: int) -> ctk.CTkEntry:
         box = ctk.CTkFrame(parent, fg_color="transparent")
@@ -4360,10 +4367,11 @@ class WaterTimer(ctk.CTk):
         except Exception:
             pass
         if self._chrome_visible or self.mode == "Break" or self.is_paused or self._menu_open:
-            self.music_live.place(relx=0.5, rely=0.64, anchor="center")
-            self.track_badge.place(relx=0.5, rely=0.69, anchor="center")
-            self.hint_text.place(relx=0.5, rely=0.74, anchor="center")
-            self.ctrl_bar.place(relx=0.5, rely=0.91, anchor="center")
+            # Keep focus chrome intentionally sparse: one music line + controls.
+            self.music_live.place(relx=0.5, rely=0.67, anchor="center")
+            self.track_badge.place_forget()
+            self.hint_text.place_forget()
+            self.ctrl_bar.place(relx=0.5, rely=0.90, anchor="center")
         else:
             for w in (self.music_live, self.track_badge, self.hint_text, self.ctrl_bar):
                 try:
@@ -4390,7 +4398,7 @@ class WaterTimer(ctk.CTk):
         self._chrome_hide_job = None
         if not self.wave_frame.winfo_ismapped():
             return
-        if self.mode == "Work" and self.is_running and not self.is_paused and self._calm_focus and not self._menu_open:
+        if self.mode == "Work" and self.is_running and not self.is_paused and not self._menu_open:
             self._chrome_visible = False
             self._place_secondary_chrome()
 
@@ -4637,6 +4645,24 @@ class WaterTimer(ctk.CTk):
             fill=self.theme.muted, font=(FONT_UI, 9),
         )
 
+    def _draw_minimal_focus_ring(self, cx, cy, radius, progress, color):
+        """Quiet progress ring behind the timer. No album-art disc during focus."""
+        r = max(76, radius * 0.78)
+        x0, y0, x1, y1 = cx-r, cy-r, cx+r, cy+r
+        base = self._blend(self.theme.bg, self.theme.glow, 0.55)
+        self.canvas.create_oval(x0, y0, x1, y1, outline=base, width=2)
+        extent = max(0.5, min(359.5, progress * 359.5))
+        self.canvas.create_arc(
+            x0, y0, x1, y1,
+            start=90, extent=-extent,
+            style="arc", outline=color, width=4,
+        )
+        # tiny breathing marker, deliberately quieter than the old now-playing disc.
+        angle = math.radians(90 - progress * 360)
+        mx = cx + math.cos(angle) * r
+        my = cy - math.sin(angle) * r
+        self.canvas.create_oval(mx-3, my-3, mx+3, my+3, fill=color, outline="")
+
     def draw_waves(self, frozen: bool = False):
         self.canvas.delete("all")
         w = self.canvas.winfo_width()
@@ -4712,7 +4738,7 @@ class WaterTimer(ctk.CTk):
         if self.mode == "Break":
             self._draw_breath_orb(cx, cy, rad, progress, c_front, long_break, frozen)
         else:
-            self._draw_now_playing_disc(cx, cy, rad, progress, c_front, frozen, calm=calm)
+            self._draw_minimal_focus_ring(cx, cy, rad, progress, c_front)
 
         if self.mode == "Work" and self.intention and not self.is_paused:
             self._draw_intention_chip(w, h)
