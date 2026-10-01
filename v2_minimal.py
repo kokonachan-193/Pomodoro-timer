@@ -32,6 +32,7 @@ class MinimalShell:
         self.music_entry = None
         self.start_button = None
         self.duration_label = None
+        self.rhythm_label = None
         self.sound_drawer = None
 
     # ------------------------------------------------------------------ home
@@ -160,12 +161,13 @@ class MinimalShell:
         )
         self.duration_label.grid(row=4, column=0, pady=(16, 0))
 
-        ctk.CTkLabel(
+        self.rhythm_label = ctk.CTkLabel(
             focus_card,
-            text="A calm 50 / 10 rhythm",
+            text="",
             font=ctk.CTkFont(size=11),
             text_color=t.muted,
-        ).grid(row=5, column=0, pady=(0, 12))
+        )
+        self.rhythm_label.grid(row=5, column=0, pady=(0, 12))
 
         # Secondary information stays collapsed.
         sound_row = ctk.CTkFrame(focus_card, fg_color="transparent")
@@ -257,6 +259,13 @@ class MinimalShell:
             )
         if self.duration_label:
             self.duration_label.configure(text=f"{key}:00")
+        rhythm_copy = {
+            "25": "25 min focus  ·  5 min reset",
+            "50": "50 min focus  ·  10 min reset",
+            "90": "90 min deep dive  ·  20 min recovery",
+        }
+        if self.rhythm_label:
+            self.rhythm_label.configure(text=rhythm_copy.get(key, "Custom focus rhythm"))
         work, brk, name, long_break, every, cycles, blurb, preset_key = self.PRESETS[key]
         a.set_preset(work, brk, name, long_break=long_break, long_every=every, cycles=cycles, blurb=blurb, key=preset_key)
 
@@ -361,6 +370,7 @@ class MinimalShell:
         self.music_entry = None
         self.start_button = None
         self.duration_label = None
+        self.rhythm_label = None
         self.sound_drawer = None
         self._sound_open = False
         self.install()
