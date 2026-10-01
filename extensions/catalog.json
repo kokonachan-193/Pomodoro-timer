@@ -1,0 +1,62 @@
+[
+  {
+    "id": "theme-jellyfish-night",
+    "name": "Jellyfish Night",
+    "version": "1.0.0",
+    "type": "theme",
+    "description": "Violet-blue deep-sea mood with softer glow for late-night focus.",
+    "permissions": [
+      "ui"
+    ]
+  },
+  {
+    "id": "theme-abyss-black",
+    "name": "Abyss Black",
+    "version": "1.0.0",
+    "type": "theme",
+    "description": "Near-black low-distraction theme for Deep Dive sessions.",
+    "permissions": [
+      "ui"
+    ]
+  },
+  {
+    "id": "preset-coding-90",
+    "name": "Coding 90",
+    "version": "1.0.0",
+    "type": "preset",
+    "description": "90 minutes of focus followed by a 20 minute recovery block.",
+    "permissions": [
+      "timer"
+    ]
+  },
+  {
+    "id": "preset-writing-50",
+    "name": "Writing 50",
+    "version": "1.0.0",
+    "type": "preset",
+    "description": "50/10 rhythm for writing, study and design work.",
+    "permissions": [
+      "timer"
+    ]
+  },
+  {
+    "id": "sound-study-rain",
+    "name": "Study Rain",
+    "version": "1.0.0",
+    "type": "sound",
+    "description": "Rain-forward ambient profile designed to sit under quiet music.",
+    "permissions": [
+      "audio"
+    ]
+  },
+  {
+    "id": "sound-deep-ocean",
+    "name": "Deep Ocean",
+    "version": "1.0.0",
+    "type": "sound",
+    "description": "Low ocean-current ambience for long focus blocks.",
+    "permissions": [
+      "audio"
+    ]
+  }
+]
