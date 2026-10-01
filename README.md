@@ -5,14 +5,14 @@
 </p>
 
 <p align="center">
-  <strong>Find your flow.</strong><br />
-  A calm desktop Pomodoro — focus music, distraction guard, planned breaks.
+  <strong>Descend into focus.</strong><br />
+  A deep-sea focus workspace — immersive timers, music, tasks, soundscapes, stats and extensions.
 </p>
 
 <p align="center">
   <a href="README.ja.md">日本語</a>
   ·
-  <b>v1.2.0</b>
+  <b>v2.0.0</b>
   ·
   Windows · macOS · Ubuntu · Linux · Android
 </p>
@@ -21,43 +21,51 @@
 
 ## Get the app
 
-No build required. Grab a package from [`downloads/`](downloads/) (or a GitHub Release when published).
+No build required. Download the package for your platform from the GitHub Release.
 
 | Platform | Package | Run |
 | :--- | :--- | :--- |
-| **Windows 10 / 11** | `AquaFocusSetup-1.2.0.exe` | Installer (recommended) |
-| **Windows** | `AquaFocus-Windows-Portable-1.2.0.zip` | Unzip → `AquaFocus.exe` |
-| **macOS** | `AquaFocus-macOS-1.2.0.zip` | Unzip → `AquaFocus.app` |
-| **Ubuntu / Linux** | `AquaFocus-*-Portable-1.2.0.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
-| **Android 8+** | `AquaFocus-Android-1.2.0.apk` | Install APK on your Android device |
+| **Windows 10 / 11** | `AquaFocusSetup-2.0.0.exe` | Installer · recommended |
+| **Windows** | `AquaFocus-Windows-Portable-2.0.0.zip` | Unzip → `AquaFocus.exe` |
+| **macOS** | `AquaFocus-macOS-2.0.0.zip` | Unzip → `AquaFocus.app` |
+| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.0.0.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
+| **Android 8+** | `AquaFocus-Android-2.0.0.apk` | Install the APK |
 
-ffmpeg is **bundled**. Updates can be checked in-app via **AGIU** (GitHub Releases).
-
-> Release notes (EN / JA) for uploaders: [`docs/release/`](docs/release/)
+ffmpeg is **bundled** on desktop. Existing desktop installs can check GitHub Releases through **AGIU**.
 
 ---
 
-## What’s new in 1.2.0
+## What’s new in 2.0.0
 
-- **AGIU** — check GitHub Releases and update the installed app (all OS packages)
-- **Music reliability** — YouTube/Spotify playback preserves required HTTP headers and falls back cleanly when streaming fails
-- **Modernized UI** — scrollable settings/sidebar, roomier layout, better small-screen usability
-- **Audio output** — uses the OS default automatically when no device is selected
-- Cross-platform packages: Windows · macOS · Linux / Ubuntu
+- **Deep Sea UI** — animated caustic light, bubbles, glass-like cards and a calmer visual hierarchy
+- **Quick Dive** — Focus, Deep Dive, Countdown, Stopwatch and Alarm from one launcher
+- **Deep Dive** — one-click 90-minute low-distraction session
+- **Coral Tasks** — persistent tasks that collect focused minutes automatically
+- **Abyss Stats** — today / week / all-time focus tracking with a 7-day chart
+- **Ocean Soundscape** — independent Ocean / Rain / Brown Noise ambient layer
+- **Reef Extensions** — online catalog foundation for themes, sounds and focus presets
+- **Reduce Motion** — lower-motion mode for comfort and accessibility
+- **Music reliability** — yt-dlp/ffmpeg streaming headers and fallback logic retained from v1.2
+- **Cross-platform** — Windows, macOS, Linux / Ubuntu and Android packages
 
 ---
 
 ## Features
 
-| | |
+| Area | Included |
 | :--- | :--- |
-| **Timer** | Science-based presets, short → long breaks, one session intention |
-| **Music** | YouTube / Spotify / direct stream — **work sessions only** |
-| **Focus lock** | Temptation guard (full film on Windows; soft mode on macOS / Linux) |
-| **Language** | 日本語 / English in the sidebar |
-| **Updates** | AGIU · audio device picker |
+| **Focus** | Pomodoro, 25/5 · 50/10 · 90/20, long breaks, session intention |
+| **Modes** | Focus · Deep Dive · Countdown · Stopwatch · Blue Alarm |
+| **Music** | YouTube / Spotify-matched / direct streams, playlists, audio output selection |
+| **Soundscape** | Ocean · Rain · Brown Noise as a separate ambient layer |
+| **Tasks** | Persistent tasks, completion state, focus-minute attribution |
+| **Stats** | Daily / weekly / total focus time, recent sessions, 7-day chart |
+| **Extensions** | Online catalog + local installed-extension registry |
+| **Focus lock** | Temptation guard on desktop |
+| **Accessibility** | Reduce Motion and calm-focus behavior |
+| **Updates** | AGIU desktop update checker |
 
-More detail: [`docs/platforms.md`](docs/platforms.md) · [`docs/learning-science-jp.md`](docs/learning-science-jp.md)
+Product / UI plan: [`docs/aqua-focus-v2-concept.md`](docs/aqua-focus-v2-concept.md)
 
 ---
 
@@ -65,7 +73,7 @@ More detail: [`docs/platforms.md`](docs/platforms.md) · [`docs/learning-science
 
 ```bash
 pip install -r requirements.txt
-python main.py          # Windows: py main.py
+python main.py
 ```
 
 ### Build packages
@@ -76,12 +84,19 @@ python main.py          # Windows: py main.py
 ```
 
 ```bash
-# macOS or Linux (on that OS)
+# macOS / Linux
 ./scripts/make_release_unix.sh
+```
+
+Android:
+
+```bash
+cd android
+buildozer android debug
 ```
 
 ---
 
 <p align="center">
-  <sub>Aqua Focus · Kokona · MIT-friendly desktop focus tool</sub>
+  <sub>Aqua Focus · Kokona · Deep Sea focus workspace</sub>
 </p>
