@@ -12,7 +12,7 @@
 <p align="center">
   <a href="README.md">English</a>
   ·
-  <b>v2.1.0</b>
+  <b>v2.1.1</b>
   ·
   Windows · macOS · Ubuntu · Linux · Android
 </p>
@@ -25,17 +25,17 @@ GitHub Release から使用するOS向けのパッケージを取得できます
 
 | プラットフォーム | パッケージ | 使い方 |
 | :--- | :--- | :--- |
-| **Windows 10 / 11** | `AquaFocusSetup-2.1.0.exe` | インストーラ · おすすめ |
-| **Windows** | `AquaFocus-Windows-Portable-2.1.0.zip` | 解凍 → `AquaFocus.exe` |
-| **macOS** | `AquaFocus-macOS-2.1.0.zip` | 解凍 → `AquaFocus.app` |
-| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.1.0.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
-| **Android 8+** | `AquaFocus-Android-2.1.0.apk` | APKをインストール |
+| **Windows 10 / 11** | `AquaFocusSetup-2.1.1.exe` | インストーラ · おすすめ |
+| **Windows** | `AquaFocus-Windows-Portable-2.1.1.zip` | 解凍 → `AquaFocus.exe` |
+| **macOS** | `AquaFocus-macOS-2.1.1.zip` | 解凍 → `AquaFocus.app` |
+| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.1.1.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
+| **Android 8+** | `AquaFocus-Android-2.1.1.apk` | APKをインストール |
 
 デスクトップ版は ffmpeg **同梱**。既存版は **AGIU** からGitHub Releasesの更新を確認できます。
 
 ---
 
-## v2.1.0 の新機能
+## v2.1.1 の新機能
 
 - **Attention-first Home** — 「1タスク・1時間選択・Start」を中心に全面再設計
 - **Focus画面刷新** — 時間・細い進捗リング・今やるタスクだけを常時表示
