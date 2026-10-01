@@ -118,6 +118,7 @@ class MinimalShell:
             font=ctk.CTkFont(size=14),
         )
         self.intent_entry.grid(row=2, column=0, padx=42, pady=(18, 24), sticky="ew")
+        self.intent_entry.bind("<Return>", lambda _event: self.start_focus())
         try:
             existing = a.entry_intention.get().strip()
             if existing:
@@ -458,6 +459,7 @@ class MinimalShell:
         self._dialog_heading(w, "More", "Tools stay here until you need them.")
 
         items = (
+            ("Custom session", "Choose your own work / break rhythm", self.open_custom_session),
             ("Countdown", "A single timer", a.v2_modes.open_countdown),
             ("Stopwatch", "Open-ended flow", a.v2_modes.open_stopwatch),
             ("Alarm", "One-time reminder", a.v2_modes.open_alarm),
@@ -473,6 +475,49 @@ class MinimalShell:
                 font=ctk.CTkFont(size=11), command=command,
             )
             card.pack(fill="x", padx=24, pady=4)
+
+    def open_custom_session(self):
+        a = self.app
+        t = a.theme
+        w = ctk.CTkToplevel(a)
+        w.title("Aqua Focus · Custom session")
+        w.geometry("440x360")
+        w.resizable(False, False)
+        w.configure(fg_color=t.bg)
+        self._dialog_heading(w, "Custom session", "Advanced timing stays out of Home.")
+
+        grid = ctk.CTkFrame(w, fg_color="transparent")
+        grid.pack(fill="x", padx=24, pady=8)
+        fields = []
+        for label, default in (("Focus minutes", "45"), ("Break minutes", "10"), ("Cycles", "2")):
+            row = ctk.CTkFrame(grid, fg_color="transparent")
+            row.pack(fill="x", pady=5)
+            ctk.CTkLabel(row, text=label, width=130, anchor="w", text_color=t.muted).pack(side="left")
+            entry = ctk.CTkEntry(row, height=38, corner_radius=12)
+            entry.insert(0, default)
+            entry.pack(side="right", fill="x", expand=True)
+            fields.append(entry)
+
+        def apply_and_start():
+            try:
+                work = max(1, float(fields[0].get()))
+                rest = max(1, float(fields[1].get()))
+                cycles = max(1, int(float(fields[2].get())))
+            except ValueError:
+                return
+            a.set_preset(work, rest, "Custom", long_break=rest, long_every=cycles, cycles=cycles, blurb="Custom rhythm")
+            self.selected = ""
+            try:
+                w.destroy()
+            except Exception:
+                pass
+            self.start_focus()
+
+        ctk.CTkButton(
+            w, text="Start custom session", height=48, corner_radius=18,
+            fg_color=t.accent, hover_color=t.accent_hover, text_color="#071116",
+            font=ctk.CTkFont(size=14, weight="bold"), command=apply_and_start,
+        ).pack(fill="x", padx=24, pady=(14, 24))
 
     def open_settings(self):
         a = self.app
