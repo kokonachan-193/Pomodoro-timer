@@ -476,7 +476,7 @@ class MinimalShell:
             body, text="Temptation guard settings", height=40,
             fg_color=t.sidebar, hover_color=t.glow,
             border_width=1, border_color=t.glow,
-            command=a._open_exclude_dialog,
+            command=a.open_temptation_exclude_dialog,
         ).pack(fill="x", padx=12, pady=5)
 
         self._section(body, "App")
