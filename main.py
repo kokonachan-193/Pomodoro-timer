@@ -2730,8 +2730,6 @@ class WaterTimer(ctk.CTk):
         self.canvas.bind("<Motion>", self._reveal_chrome)
         self.wave_frame.bind("<Motion>", self._reveal_chrome)
 
-        # v2.1 default surface: keep advanced controls alive but out of sight.
-        self.minimal_shell.install()
 
     def _compact_input(self, parent, label_key: str, default: str, col: int) -> ctk.CTkEntry:
         box = ctk.CTkFrame(parent, fg_color="transparent")
