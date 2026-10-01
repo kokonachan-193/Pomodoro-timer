@@ -2,8 +2,10 @@ name: ui-screenshot
 
 on:
   push:
-    branches: [main]
+    branches: [main, "fix/restore-full-ui-preview"]
     paths:
+      - "main.py"
+      - "v2_minimal.py"
       - ".github/workflows/ui-screenshot.yml"
   workflow_dispatch:
 
@@ -27,21 +29,31 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Launch and capture
+      - name: Launch and capture responsive previews
         env:
           DISPLAY: ":99"
         run: |
-          Xvfb :99 -screen 0 1440x1000x24 > /tmp/xvfb.log 2>&1 &
+          Xvfb :99 -screen 0 1920x1200x24 > /tmp/xvfb.log 2>&1 &
           sleep 2
-          python main.py > /tmp/aquafocus.log 2>&1 &
-          APP_PID=$!
-          sleep 10
-          scrot -u screenshot.png || scrot screenshot.png
-          kill $APP_PID || true
-          test -s screenshot.png
-      - name: Upload screenshot
+          capture () {
+            SIZE="$1"
+            OUT="$2"
+            python main.py --preview-size "$SIZE" > "/tmp/aquafocus-$OUT.log" 2>&1 &
+            APP_PID=$!
+            sleep 8
+            scrot -u "$OUT.png" || scrot "$OUT.png"
+            kill $APP_PID || true
+            test -s "$OUT.png"
+          }
+          capture 640x720 compact
+          capture 1120x820 standard
+          capture 1720x980 wide
+      - name: Upload screenshots
         uses: actions/upload-artifact@v4
         with:
-          name: aqua-focus-ui-screenshot
-          path: screenshot.png
+          name: aqua-focus-ui-screenshots
+          path: |
+            compact.png
+            standard.png
+            wide.png
           if-no-files-found: error
