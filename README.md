@@ -12,7 +12,7 @@
 <p align="center">
   <a href="README.ja.md">日本語</a>
   ·
-  <b>v2.1.0</b>
+  <b>v2.1.1</b>
   ·
   Windows · macOS · Ubuntu · Linux · Android
 </p>
@@ -25,17 +25,17 @@ No build required. Download the package for your platform from the GitHub Releas
 
 | Platform | Package | Run |
 | :--- | :--- | :--- |
-| **Windows 10 / 11** | `AquaFocusSetup-2.1.0.exe` | Installer · recommended |
-| **Windows** | `AquaFocus-Windows-Portable-2.1.0.zip` | Unzip → `AquaFocus.exe` |
-| **macOS** | `AquaFocus-macOS-2.1.0.zip` | Unzip → `AquaFocus.app` |
-| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.1.0.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
-| **Android 8+** | `AquaFocus-Android-2.1.0.apk` | Install the APK |
+| **Windows 10 / 11** | `AquaFocusSetup-2.1.1.exe` | Installer · recommended |
+| **Windows** | `AquaFocus-Windows-Portable-2.1.1.zip` | Unzip → `AquaFocus.exe` |
+| **macOS** | `AquaFocus-macOS-2.1.1.zip` | Unzip → `AquaFocus.app` |
+| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.1.1.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
+| **Android 8+** | `AquaFocus-Android-2.1.1.apk` | Install the APK |
 
 ffmpeg is **bundled** on desktop. Existing desktop installs can check GitHub Releases through **AGIU**.
 
 ---
 
-## What’s new in 2.1.0
+## What’s new in 2.1.1
 
 - **Attention-first Home** — one task, one duration, one primary Start action
 - **Focus view rebuilt** — timer + thin progress ring + current intention; controls auto-hide
