@@ -28,236 +28,235 @@ if platform == "android":
 KV = r"""
 #:import dp kivy.metrics.dp
 
-<ModernButton@Button>:
+<PrimaryButton@Button>:
     background_normal: ""
     background_down: ""
-    background_color: (0.10, 0.62, 0.86, 1) if self.state == "normal" else (0.07, 0.48, 0.70, 1)
-    color: 1, 1, 1, 1
+    background_color: (.39, .85, .81, 1) if self.state == "normal" else (.31, .72, .69, 1)
+    color: .03, .08, .10, 1
     font_size: "15sp"
     bold: True
     size_hint_y: None
-    height: dp(48)
+    height: dp(54)
 
-<SoftButton@Button>:
+<QuietButton@Button>:
     background_normal: ""
     background_down: ""
-    background_color: (0.10, 0.16, 0.22, 1) if self.state == "normal" else (0.14, 0.24, 0.32, 1)
-    color: .86, .94, .98, 1
-    font_size: "14sp"
+    background_color: (.055, .12, .15, 1) if self.state == "normal" else (.08, .17, .20, 1)
+    color: .60, .72, .75, 1
+    font_size: "12sp"
     size_hint_y: None
-    height: dp(44)
+    height: dp(40)
 
-<StatCard@BoxLayout>:
-    orientation: "vertical"
-    padding: dp(12)
-    spacing: dp(4)
-    canvas.before:
-        Color:
-            rgba: .06, .12, .17, .96
-        RoundedRectangle:
-            pos: self.pos
-            size: self.size
-            radius: [dp(18)]
+<PresetButton@ToggleButton>:
+    group: "duration"
+    allow_no_selection: False
+    background_normal: ""
+    background_down: ""
+    background_color: (.39, .85, .81, 1) if self.state == "down" else (.055, .12, .15, 1)
+    color: (.03, .08, .10, 1) if self.state == "down" else (.62, .73, .76, 1)
+    font_size: "12sp"
+    bold: True
+    size_hint_y: None
+    height: dp(38)
 
 <RootView>:
     orientation: "vertical"
     canvas.before:
         Color:
-            rgba: .025, .07, .105, 1
+            rgba: .026, .073, .094, 1
         Rectangle:
             pos: self.pos
             size: self.size
 
     ScrollView:
         do_scroll_x: False
-        bar_width: dp(3)
+        bar_width: dp(2)
 
         BoxLayout:
             orientation: "vertical"
             size_hint_y: None
             height: self.minimum_height
-            padding: dp(18), dp(18), dp(18), dp(30)
-            spacing: dp(14)
+            padding: dp(22), dp(22), dp(22), dp(32)
+            spacing: dp(18)
 
             BoxLayout:
-                size_hint_y: None
-                height: dp(72)
                 orientation: "vertical"
+                size_hint_y: None
+                height: dp(56)
                 Label:
                     text: "Aqua Focus"
-                    color: .91, .97, 1, 1
-                    font_size: "28sp"
+                    color: .93, .97, .97, 1
+                    font_size: "22sp"
                     bold: True
                     text_size: self.size
                     halign: "left"
                     valign: "middle"
                 Label:
-                    text: "Find your flow · Android"
-                    color: .48, .69, .80, 1
-                    font_size: "13sp"
+                    text: "one task. one session."
+                    color: .49, .61, .64, 1
+                    font_size: "11sp"
                     text_size: self.size
                     halign: "left"
                     valign: "top"
 
             BoxLayout:
-                size_hint_y: None
-                height: dp(42)
-                spacing: dp(8)
-                SoftButton:
-                    text: "25 / 5"
-                    on_release: root.set_preset(25, 5)
-                SoftButton:
-                    text: "50 / 10"
-                    on_release: root.set_preset(50, 10)
-                SoftButton:
-                    text: "90 / 20"
-                    on_release: root.set_preset(90, 20)
-
-            BoxLayout:
                 orientation: "vertical"
                 size_hint_y: None
-                height: dp(310)
-                padding: dp(20)
-                spacing: dp(8)
+                height: dp(490)
+                padding: dp(24)
+                spacing: dp(14)
                 canvas.before:
                     Color:
-                        rgba: .045, .105, .15, .98
+                        rgba: .043, .105, .13, .97
                     RoundedRectangle:
                         pos: self.pos
                         size: self.size
-                        radius: [dp(28)]
+                        radius: [dp(30)]
+
                 Label:
-                    text: root.mode
-                    color: (.25, .78, 1, 1) if root.mode == "FOCUS" else (.33, .88, .68, 1)
-                    font_size: "14sp"
+                    text: "READY TO DIVE"
+                    color: .39, .85, .81, 1
+                    font_size: "10sp"
                     bold: True
+                    size_hint_y: None
+                    height: dp(22)
+                    text_size: self.size
+                    halign: "left"
+
+                Label:
+                    text: "What deserves your attention?"
+                    color: .93, .97, .97, 1
+                    font_size: "20sp"
+                    bold: True
+                    size_hint_y: None
+                    height: dp(42)
+                    text_size: self.size
+                    halign: "left"
+
+                TextInput:
+                    id: intention
+                    hint_text: "One concrete next action"
+                    multiline: False
+                    size_hint_y: None
+                    height: dp(50)
+                    foreground_color: .92, .97, .97, 1
+                    hint_text_color: .43, .56, .59, 1
+                    background_normal: ""
+                    background_active: ""
+                    background_color: .028, .075, .092, 1
+                    padding: dp(14), dp(14)
+                    on_text: root.intention = self.text
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(40)
+                    spacing: dp(7)
+                    PresetButton:
+                        text: "25 min"
+                        state: "down" if root.work_minutes == 25 else "normal"
+                        on_release: root.set_preset(25, 5)
+                    PresetButton:
+                        text: "50 min"
+                        state: "down" if root.work_minutes == 50 else "normal"
+                        on_release: root.set_preset(50, 10)
+                    PresetButton:
+                        text: "90 min"
+                        state: "down" if root.work_minutes == 90 else "normal"
+                        on_release: root.set_preset(90, 20)
+
                 Label:
                     text: root.clock_text
-                    color: .94, .98, 1, 1
-                    font_size: "68sp"
+                    color: .94, .98, .98, 1
+                    font_size: "66sp"
                     bold: True
+                    size_hint_y: None
+                    height: dp(102)
+
                 Label:
-                    text: root.progress_text
-                    color: .48, .69, .80, 1
-                    font_size: "13sp"
+                    text: root.mode.title() + ("  ·  " + root.progress_text if root.progress_text else "")
+                    color: .48, .62, .65, 1
+                    font_size: "11sp"
+                    size_hint_y: None
+                    height: dp(24)
+
                 ProgressBar:
                     max: 1
                     value: root.progress
                     size_hint_y: None
-                    height: dp(8)
-                BoxLayout:
-                    size_hint_y: None
-                    height: dp(50)
-                    spacing: dp(10)
-                    ModernButton:
-                        text: "PAUSE" if root.running else "START"
-                        on_release: root.toggle_timer()
-                    SoftButton:
-                        text: "RESET"
-                        on_release: root.reset_timer()
+                    height: dp(5)
 
-            GridLayout:
-                cols: 3
-                spacing: dp(8)
-                size_hint_y: None
-                height: dp(88)
-                StatCard:
-                    Label:
-                        text: "FOCUS"
-                        color: .48, .69, .80, 1
-                        font_size: "11sp"
-                    Label:
-                        text: str(root.work_minutes) + "m"
-                        color: .91, .97, 1, 1
-                        font_size: "20sp"
-                        bold: True
-                StatCard:
-                    Label:
-                        text: "BREAK"
-                        color: .48, .69, .80, 1
-                        font_size: "11sp"
-                    Label:
-                        text: str(root.break_minutes) + "m"
-                        color: .91, .97, 1, 1
-                        font_size: "20sp"
-                        bold: True
-                StatCard:
-                    Label:
-                        text: "SESSIONS"
-                        color: .48, .69, .80, 1
-                        font_size: "11sp"
-                    Label:
-                        text: str(root.sessions)
-                        color: .91, .97, 1, 1
-                        font_size: "20sp"
-                        bold: True
+                PrimaryButton:
+                    text: "Pause" if root.running else "Start focus"
+                    on_release: root.toggle_timer()
+
+                QuietButton:
+                    text: "Reset session"
+                    on_release: root.reset_timer()
 
             BoxLayout:
                 orientation: "vertical"
                 size_hint_y: None
-                height: dp(250)
-                padding: dp(16)
-                spacing: dp(10)
-                canvas.before:
-                    Color:
-                        rgba: .045, .105, .15, .98
-                    RoundedRectangle:
-                        pos: self.pos
-                        size: self.size
-                        radius: [dp(22)]
-                Label:
-                    text: "FOCUS MUSIC"
-                    color: .91, .97, 1, 1
-                    bold: True
-                    font_size: "14sp"
-                    text_size: self.size
-                    halign: "left"
-                TextInput:
-                    id: music_url
-                    hint_text: "YouTube URL or direct audio URL"
-                    multiline: False
-                    size_hint_y: None
-                    height: dp(46)
-                    foreground_color: .9, .96, 1, 1
-                    hint_text_color: .40, .58, .68, 1
-                    background_color: .04, .09, .13, 1
-                    padding: dp(12), dp(12)
-                Label:
-                    text: root.music_status
-                    color: .48, .69, .80, 1
-                    font_size: "12sp"
-                    text_size: self.size
-                    halign: "left"
+                height: dp(48) if not root.sound_open else dp(235)
+                padding: dp(2)
+                spacing: dp(8)
+
+                QuietButton:
+                    text: ("Sound  ·  optional   ▾" if not root.sound_open else "Sound   ▴")
+                    on_release: root.sound_open = not root.sound_open
+
                 BoxLayout:
+                    orientation: "vertical"
                     size_hint_y: None
-                    height: dp(46)
+                    height: dp(175) if root.sound_open else 0
+                    opacity: 1 if root.sound_open else 0
+                    disabled: not root.sound_open
                     spacing: dp(8)
-                    ModernButton:
-                        text: "PLAY"
-                        on_release: root.play_music(music_url.text)
-                    SoftButton:
-                        text: "STOP"
-                        on_release: root.stop_music()
-                BoxLayout:
-                    size_hint_y: None
-                    height: dp(40)
+                    TextInput:
+                        id: music_url
+                        hint_text: "YouTube or direct audio URL"
+                        multiline: False
+                        size_hint_y: None
+                        height: dp(46)
+                        foreground_color: .9, .96, .96, 1
+                        hint_text_color: .40, .54, .57, 1
+                        background_normal: ""
+                        background_active: ""
+                        background_color: .028, .075, .092, 1
+                        padding: dp(12), dp(12)
                     Label:
-                        text: "Volume"
-                        color: .72, .84, .90, 1
-                        size_hint_x: .25
+                        text: root.music_status
+                        color: .48, .62, .65, 1
+                        font_size: "11sp"
+                        size_hint_y: None
+                        height: dp(24)
+                    BoxLayout:
+                        size_hint_y: None
+                        height: dp(40)
+                        spacing: dp(8)
+                        PrimaryButton:
+                            text: "Play"
+                            height: dp(40)
+                            on_release: root.play_music(music_url.text)
+                        QuietButton:
+                            text: "Stop"
+                            height: dp(40)
+                            on_release: root.stop_music()
                     Slider:
                         min: 0
                         max: 1
                         value: root.volume
+                        size_hint_y: None
+                        height: dp(28)
                         on_value: root.set_volume(self.value)
 
             Label:
-                text: "Android build · timer runs locally · music stops when you leave Focus mode"
-                color: .36, .54, .63, 1
+                text: ("Today · " + str(root.sessions) + " completed session" + ("" if root.sessions == 1 else "s"))
+                color: .40, .52, .55, 1
                 font_size: "11sp"
                 size_hint_y: None
-                height: dp(34)
+                height: dp(30)
 """
+
 
 
 class AndroidAudio:
@@ -379,6 +378,8 @@ class RootView(BoxLayout):
     sessions = NumericProperty(0)
     volume = NumericProperty(0.55)
     music_status = StringProperty("Ready")
+    intention = StringProperty("")
+    sound_open = BooleanProperty(False)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -397,7 +398,7 @@ class RootView(BoxLayout):
     def toggle_timer(self):
         self.running = not self.running
         self._last_tick = time.monotonic()
-        self.progress_text = "Focus session running" if self.running else "Paused"
+        self.progress_text = "In focus" if self.running else "Paused"
 
     def reset_timer(self):
         self.running = False
@@ -405,7 +406,7 @@ class RootView(BoxLayout):
         self.remaining = self.work_minutes * 60
         self.total = self.remaining
         self.progress = 0
-        self.progress_text = "Ready to focus"
+        self.progress_text = "Ready"
         self._sync_clock()
         self.stop_music()
 
