@@ -364,7 +364,7 @@ class MinimalShell:
     # ------------------------------------------------------------ focus screen
     def place_focus_chrome(self):
         a = self.app
-        visible = a.mode == "Break" or a.is_paused or a._menu_open
+        visible = bool(getattr(a, "_chrome_visible", False)) or a.mode == "Break" or a.is_paused or a._menu_open
         try:
             a.menu_btn.place_forget()
         except Exception:
