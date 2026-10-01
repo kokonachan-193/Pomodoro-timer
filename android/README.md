@@ -1,6 +1,6 @@
 # Aqua Focus Android
 
-Android-native companion build for Aqua Focus.
+Android companion build for Aqua Focus v2 — the Deep Sea focus workspace.
 
 ## Included
 
@@ -26,4 +26,4 @@ buildozer android debug
 
 GitHub Actions builds:
 
-`AquaFocus-Android-1.2.0.apk`
+`AquaFocus-Android-2.0.0.apk`
