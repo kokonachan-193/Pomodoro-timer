@@ -251,18 +251,18 @@ class Theme:
 THEMES: dict[str, Theme] = {
     "Ocean Depth": Theme(
         name="Ocean Depth",
-        bg="#071825",
-        sidebar="#0b2436",
-        accent="#2aa8e0",
-        accent_hover="#1e8fc2",
-        wave_back_work="#0e4d6e",
-        wave_front_work="#2aa8e0",
-        wave_back_break="#0f5c4c",
-        wave_front_break="#2dd4a8",
-        particle="#7fd4ff",
-        glow="#1a6a8a",
-        text="#e8f4fc",
-        muted="#8bb4c9",
+        bg="#061722",
+        sidebar="#0d2b3d",
+        accent="#38bdf8",
+        accent_hover="#169bd5",
+        wave_back_work="#0f5877",
+        wave_front_work="#38bdf8",
+        wave_back_break="#116452",
+        wave_front_break="#43dfb6",
+        particle="#a9e5ff",
+        glow="#2b6f8c",
+        text="#f4fbff",
+        muted="#b7d3df",
     ),
     "Midnight Aurora": Theme(
         name="Midnight Aurora",
@@ -2051,7 +2051,7 @@ class WaterTimer(ctk.CTk):
 
         self.sidebar = ctk.CTkScrollableFrame(
             self.main_container,
-            width=232,
+            width=262,
             corner_radius=18,
             fg_color=self.theme.sidebar,
             border_width=1,
@@ -2063,7 +2063,7 @@ class WaterTimer(ctk.CTk):
 
         ctk.CTkLabel(
             self.sidebar, text="Aqua Focus",
-            font=ctk.CTkFont(family=FONT_UI_BOLD, size=22),
+            font=ctk.CTkFont(family=FONT_UI_BOLD, size=24),
             text_color=self.theme.text,
         ).pack(pady=(28, 4), padx=16, anchor="w")
         self.sidebar_sub = ctk.CTkLabel(
@@ -2095,14 +2095,14 @@ class WaterTimer(ctk.CTk):
             btn = ctk.CTkButton(
                 self.sidebar,
                 text=label,
-                height=31,
-                corner_radius=11,
+                height=38,
+                corner_radius=12,
                 fg_color="transparent",
                 hover_color=self.theme.glow,
                 border_width=1,
                 border_color=self.theme.glow,
                 text_color=self.theme.text,
-                font=ctk.CTkFont(family=FONT_UI, size=11),
+                font=ctk.CTkFont(family=FONT_UI_BOLD, size=12),
                 anchor="w",
                 command=command,
             )
@@ -2326,16 +2326,16 @@ class WaterTimer(ctk.CTk):
 
         self.hero_label = ctk.CTkLabel(
             self.setup_frame, text=self.t("timer_settings"),
-            font=ctk.CTkFont(family=FONT_UI_BOLD, size=34),
+            font=ctk.CTkFont(family=FONT_UI_BOLD, size=38),
             text_color=self.theme.text,
         )
         self.hero_label.pack(pady=(24, 6), anchor="w")
         self.hero_sub = ctk.CTkLabel(
             self.setup_frame,
             text=self.t("hero_sub_default"),
-            font=ctk.CTkFont(family=FONT_UI, size=13),
+            font=ctk.CTkFont(family=FONT_UI, size=14),
             text_color=self.theme.muted,
-            wraplength=520, justify="left",
+            wraplength=720, justify="left",
         )
         self.hero_sub.pack(anchor="w", pady=(0, 12))
 
@@ -2373,27 +2373,30 @@ class WaterTimer(ctk.CTk):
         ).pack(side="right")
 
         mode_row = ctk.CTkFrame(self.mode_launcher, fg_color="transparent")
-        mode_row.pack(fill="x", padx=12, pady=(0, 12))
+        mode_row.pack(fill="x", padx=12, pady=(0, 14))
+        mode_row.grid_columnconfigure(0, weight=1)
+        mode_row.grid_columnconfigure(1, weight=1)
         self.v2_mode_buttons = []
         mode_specs = [
-            ("Focus", self.start_immersive_timer, self.theme.accent),
-            ("Deep Dive", self.start_deep_dive_mode, self.theme.wave_front_break),
-            ("Countdown", self.v2_modes.open_countdown, self.theme.glow),
-            ("Stopwatch", self.v2_modes.open_stopwatch, self.theme.glow),
-            ("Alarm", self.v2_modes.open_alarm, "#8a6a20"),
+            ("FOCUS\nPomodoro & presets", self.start_immersive_timer, self.theme.accent),
+            ("DEEP DIVE\n90 min · minimal", self.start_deep_dive_mode, self.theme.wave_front_break),
+            ("COUNTDOWN\nSingle timer", self.v2_modes.open_countdown, self.theme.glow),
+            ("STOPWATCH\nOpen-ended flow", self.v2_modes.open_stopwatch, self.theme.glow),
+            ("BLUE ALARM\nOne-time reminder", self.v2_modes.open_alarm, "#8a6a20"),
         ]
-        for label, command, color in mode_specs:
+        for i, (label, command, color) in enumerate(mode_specs):
             btn = ctk.CTkButton(
                 mode_row,
                 text=label,
-                height=40,
+                height=58,
                 corner_radius=14,
                 fg_color=color,
                 hover_color=self.theme.accent_hover,
-                font=ctk.CTkFont(family=FONT_UI_BOLD, size=11),
+                text_color="#f8fcff",
+                font=ctk.CTkFont(family=FONT_UI_BOLD, size=12),
                 command=command,
             )
-            btn.pack(side="left", fill="x", expand=True, padx=4)
+            btn.grid(row=i // 2, column=i % 2, sticky="ew", padx=5, pady=5)
             self.v2_mode_buttons.append(btn)
 
         self.science_row = ctk.CTkFrame(self.setup_frame, fg_color="transparent")
@@ -2411,23 +2414,29 @@ class WaterTimer(ctk.CTk):
                 self.science_row, fg_color=self.theme.sidebar, corner_radius=12,
                 border_width=1, border_color=self.theme.glow,
             )
-            card.grid(row=0, column=i, padx=(0 if i == 0 else 6), sticky="ew")
+            card.grid(
+                row=i // 2,
+                column=i % 2,
+                padx=(0 if i % 2 == 0 else 6),
+                pady=(0 if i < 2 else 6, 0),
+                sticky="nsew",
+            )
             sw = ctk.CTkLabel(card, text="", width=8, height=36, fg_color=col, corner_radius=4)
             sw.pack(side="left", padx=(10, 8), pady=10)
             txt = ctk.CTkFrame(card, fg_color="transparent")
             txt.pack(side="left", fill="both", expand=True, pady=8, padx=(0, 10))
             title_lbl = ctk.CTkLabel(
-                txt, text=self.t(title_k), font=ctk.CTkFont(family=FONT_UI_BOLD, size=12),
+                txt, text=self.t(title_k), font=ctk.CTkFont(family=FONT_UI_BOLD, size=13),
                 text_color=self.theme.text,
             )
             title_lbl.pack(anchor="w")
             sub_lbl = ctk.CTkLabel(
-                txt, text=self.t(sub_k), font=ctk.CTkFont(size=10), text_color=self.theme.muted,
+                txt, text=self.t(sub_k), font=ctk.CTkFont(family=FONT_UI, size=11), text_color=self.theme.muted,
             )
             sub_lbl.pack(anchor="w")
             self._pillar_labels.extend([(title_lbl, title_k), (sub_lbl, sub_k)])
             self._science_pillar_cards.append((card, sw))
-            self.science_row.grid_columnconfigure(i, weight=1)
+            self.science_row.grid_columnconfigure(i % 2, weight=1)
         self.science_note = ctk.CTkLabel(
             self.setup_frame,
             text=self.t("science_doc_hint"),
