@@ -34,6 +34,14 @@ class MinimalShell:
         self.duration_label = None
         self.rhythm_label = None
         self.sound_drawer = None
+        self.shell = None
+        self.top = None
+        self.brand = None
+        self.top_actions = None
+        self.focus_card = None
+        self.focus_title = None
+        self._top_buttons = []
+        self._home_resize_after = None
 
     # ------------------------------------------------------------------ home
     def install(self):
@@ -52,15 +60,26 @@ class MinimalShell:
         self.surface = ctk.CTkFrame(a.main_container, fg_color=t.bg, corner_radius=0)
         self.surface.pack(fill="both", expand=True)
 
-        # generous outer gutter: avoids the "admin dashboard" look
+        # The minimal shell must remain usable as a genuinely small desktop
+        # utility.  The legacy app used 940x640 as its minimum which meant the
+        # new compact UI could never actually be compact.
+        try:
+            a.minsize(560, 520)
+        except Exception:
+            pass
+
+        # generous at normal sizes, automatically tightened by _apply_home_layout
         shell = ctk.CTkFrame(self.surface, fg_color="transparent")
         shell.pack(fill="both", expand=True, padx=30, pady=22)
+        self.shell = shell
 
         top = ctk.CTkFrame(shell, fg_color="transparent", height=44)
+        self.top = top
         top.pack(fill="x")
         top.pack_propagate(False)
 
         brand = ctk.CTkFrame(top, fg_color="transparent")
+        self.brand = brand
         brand.pack(side="left")
         ctk.CTkLabel(
             brand, text="Aqua Focus",
@@ -73,11 +92,17 @@ class MinimalShell:
         ).pack(anchor="w", pady=(1, 0))
 
         top_actions = ctk.CTkFrame(top, fg_color="transparent")
+        self.top_actions = top_actions
         top_actions.pack(side="right")
-        self._quiet_button(top_actions, "Stats", a.workspace.open_stats).pack(side="left", padx=3)
-        self._quiet_button(top_actions, "Tasks", a.workspace.open_tasks).pack(side="left", padx=3)
-        self._quiet_button(top_actions, "•••", self.open_tools, width=44).pack(side="left", padx=3)
-        self._quiet_button(top_actions, "Settings", self.open_settings, width=84).pack(side="left", padx=(3, 0))
+        stats_btn = self._quiet_button(top_actions, "Stats", a.workspace.open_stats)
+        tasks_btn = self._quiet_button(top_actions, "Tasks", a.workspace.open_tasks)
+        tools_btn = self._quiet_button(top_actions, "•••", self.open_tools, width=44)
+        settings_btn = self._quiet_button(top_actions, "Settings", self.open_settings, width=84)
+        stats_btn.pack(side="left", padx=3)
+        tasks_btn.pack(side="left", padx=3)
+        tools_btn.pack(side="left", padx=3)
+        settings_btn.pack(side="left", padx=(3, 0))
+        self._top_buttons = [stats_btn, tasks_btn, tools_btn, settings_btn]
 
         # Responsive content: never use absolute placement here.
         # Fixed place() coordinates caused the card to be clipped on smaller
@@ -93,6 +118,7 @@ class MinimalShell:
             border_width=1,
             border_color=self._blend(t.bg, t.glow, 0.78),
         )
+        self.focus_card = focus_card
         focus_card.pack(anchor="n", pady=(14, 0))
         focus_card.pack_propagate(True)
         focus_card.grid_columnconfigure(0, weight=1)
@@ -104,11 +130,12 @@ class MinimalShell:
         )
         eyebrow.grid(row=0, column=0, padx=34, pady=(26, 5), sticky="w")
 
-        ctk.CTkLabel(
+        self.focus_title = ctk.CTkLabel(
             focus_card, text="What will you finish?",
             font=ctk.CTkFont(family=a.FONT_UI_BOLD, size=23, weight="bold"),
             text_color=t.text,
-        ).grid(row=1, column=0, padx=34, sticky="w")
+        )
+        self.focus_title.grid(row=1, column=0, padx=34, sticky="w")
 
         self.intent_entry = ctk.CTkEntry(
             focus_card,
@@ -213,6 +240,11 @@ class MinimalShell:
         self.select_duration(self.selected if self.selected in self.PRESETS else "50")
         a._v3_focus = True
 
+        # Reflow rather than clip when the user drags the window smaller.
+        # Debouncing avoids doing expensive font/layout work for every pixel.
+        self.surface.bind("<Configure>", self._on_home_resize, add="+")
+        self.surface.after(40, self._apply_home_layout)
+
         # Focus-view typography and control shape.
         try:
             a.status_text.configure(font=ctk.CTkFont(family=a.FONT_UI_BOLD, size=12), text_color="#8fa9b5")
@@ -223,6 +255,127 @@ class MinimalShell:
             a.menu_btn.place_forget()
         except Exception:
             pass
+
+    def _on_home_resize(self, _event=None):
+        if self.surface is None:
+            return
+        try:
+            if self._home_resize_after is not None:
+                self.surface.after_cancel(self._home_resize_after)
+        except Exception:
+            pass
+        try:
+            self._home_resize_after = self.surface.after(35, self._apply_home_layout)
+        except Exception:
+            self._home_resize_after = None
+
+    def _apply_home_layout(self):
+        """Continuously adapt Home from full desktop down to a small utility window."""
+        if self.surface is None or self.shell is None or self.focus_card is None:
+            return
+        try:
+            w = max(1, int(self.surface.winfo_width()))
+            h = max(1, int(self.surface.winfo_height()))
+        except Exception:
+            return
+
+        narrow = w < 700
+        very_narrow = w < 610
+        short = h < 620
+
+        outer_x = 12 if very_narrow else (18 if narrow else 30)
+        outer_y = 10 if short else 22
+        try:
+            self.shell.pack_configure(padx=outer_x, pady=outer_y)
+        except Exception:
+            pass
+
+        # At narrow widths the brand and utility actions become two rows instead
+        # of fighting for the same horizontal pixels.
+        if self.top is not None and self.brand is not None and self.top_actions is not None:
+            try:
+                self.brand.pack_forget()
+                self.top_actions.pack_forget()
+                if very_narrow:
+                    self.top.configure(height=76)
+                    self.brand.pack(side="top", anchor="w")
+                    self.top_actions.pack(side="bottom", anchor="e")
+                else:
+                    self.top.configure(height=44)
+                    self.brand.pack(side="left")
+                    self.top_actions.pack(side="right")
+            except Exception:
+                pass
+
+        # Keep the primary card inside the actual viewport.  A CTkFrame width is
+        # otherwise allowed to stay at 660px and gets clipped by a smaller window.
+        card_width = min(660, max(360, w - (outer_x * 2) - 8))
+        try:
+            self.focus_card.configure(width=card_width, corner_radius=22 if narrow else 28)
+        except Exception:
+            pass
+
+        pad = 22 if very_narrow else (28 if narrow else 34)
+        for widget in (
+            getattr(self, "intent_entry", None),
+            getattr(self, "start_button", None),
+            getattr(self, "sound_button", None),
+        ):
+            if widget is None:
+                continue
+            try:
+                info = widget.grid_info()
+                if info:
+                    widget.grid_configure(padx=pad if widget is not self.sound_button else 0)
+            except Exception:
+                pass
+
+        try:
+            self.focus_title.configure(font=ctk.CTkFont(
+                family=self.app.FONT_UI_BOLD,
+                size=19 if very_narrow else (21 if narrow else 23),
+                weight="bold",
+            ))
+        except Exception:
+            pass
+        try:
+            self.duration_label.configure(font=ctk.CTkFont(
+                family=self.app.FONT_UI_BOLD,
+                size=46 if very_narrow else (52 if narrow else 60),
+                weight="bold",
+            ))
+        except Exception:
+            pass
+
+        # Small windows need less vertical air, not smaller hit targets.
+        try:
+            self.focus_card.pack_configure(pady=(6 if short else 14, 0))
+            self.today_label.pack_configure(pady=(7 if short else 12, 0))
+        except Exception:
+            pass
+        self._home_resize_after = None
+
+    def _apply_focus_scale(self):
+        """Scale focus typography/controls to the current canvas, with sane touch targets."""
+        a = self.app
+        try:
+            w = max(1, a.canvas.winfo_width())
+            h = max(1, a.canvas.winfo_height())
+        except Exception:
+            return 1.0
+        scale = max(0.62, min(1.0, w / 900.0, h / 640.0))
+        try:
+            a.status_text.configure(font=ctk.CTkFont(
+                family=a.FONT_UI_BOLD, size=max(10, int(12 * scale))
+            ))
+            a.time_text.configure(font=ctk.CTkFont(
+                family=a.FONT_UI_BOLD, size=max(56, int(94 * scale)), weight="bold"
+            ))
+            a.pause_btn.configure(width=max(88, int(112 * scale)))
+            a.stop_btn.configure(width=max(78, int(96 * scale)))
+        except Exception:
+            pass
+        return scale
 
     def _today_copy(self):
         try:
@@ -372,12 +525,21 @@ class MinimalShell:
         self.duration_label = None
         self.rhythm_label = None
         self.sound_drawer = None
+        self.shell = None
+        self.top = None
+        self.brand = None
+        self.top_actions = None
+        self.focus_card = None
+        self.focus_title = None
+        self._top_buttons = []
+        self._home_resize_after = None
         self._sound_open = False
         self.install()
 
     # ------------------------------------------------------------ focus screen
     def place_focus_chrome(self):
         a = self.app
+        scale = self._apply_focus_scale()
         visible = bool(getattr(a, "_chrome_visible", False)) or a.mode == "Break" or a.is_paused or a._menu_open
         try:
             a.menu_btn.place_forget()
@@ -386,11 +548,11 @@ class MinimalShell:
 
         if visible:
             try:
-                a.music_live.place(relx=0.5, rely=0.72, anchor="center")
+                a.music_live.place(relx=0.5, rely=0.70 if scale < 0.78 else 0.72, anchor="center")
             except Exception:
                 pass
             try:
-                a.ctrl_bar.place(relx=0.5, rely=0.89, anchor="center")
+                a.ctrl_bar.place(relx=0.5, rely=0.86 if scale < 0.78 else 0.89, anchor="center")
             except Exception:
                 pass
         else:
@@ -407,6 +569,7 @@ class MinimalShell:
         w, h = c.winfo_width(), c.winfo_height()
         if w < 10 or h < 10:
             return
+        scale = self._apply_focus_scale()
 
         t = a.theme
         motion = 0.0 if a.reduce_motion else (0.25 if frozen else 1.0)
@@ -431,7 +594,7 @@ class MinimalShell:
             progress = max(0.0, min(1.0, 1.0 - a.remaining_seconds / a.total_seconds))
 
         cx, cy = w / 2, h * 0.40
-        radius = min(w, h) * 0.185
+        radius = min(w, h) * (0.17 if scale < 0.78 else 0.185)
         base = self._blend(t.bg, t.glow, 0.60)
         active = t.accent if a.mode == "Work" else t.wave_front_break
         c.create_oval(cx-radius, cy-radius, cx+radius, cy+radius, outline=base, width=2)
