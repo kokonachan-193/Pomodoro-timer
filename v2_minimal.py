@@ -204,7 +204,7 @@ class MinimalShell:
         )
         self.today_label.place(relx=0.5, rely=0.89, anchor="center")
 
-        self.select_duration("50")
+        self.select_duration(self.selected if self.selected in self.PRESETS else "50")
         a._v3_focus = True
 
         # Focus-view typography and control shape.
@@ -322,7 +322,30 @@ class MinimalShell:
 
 
     def refresh_theme(self):
-        """Rebuild the visible shell after a theme change; legacy controls stay hidden."""
+        """Rebuild the visible shell after a theme change without losing user input."""
+        a = self.app
+        intent = ""
+        music = ""
+        try:
+            intent = self.intent_entry.get().strip() if self.intent_entry else ""
+        except Exception:
+            pass
+        try:
+            music = self.music_entry.get().strip() if self.music_entry else ""
+        except Exception:
+            pass
+        if intent:
+            try:
+                a.entry_intention.delete(0, tk.END)
+                a.entry_intention.insert(0, intent)
+            except Exception:
+                pass
+        if music:
+            try:
+                a.entry_music.delete(0, tk.END)
+                a.entry_music.insert(0, music)
+            except Exception:
+                pass
         if self.surface is not None:
             try:
                 self.surface.destroy()
