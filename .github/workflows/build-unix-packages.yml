@@ -1,11 +1,9 @@
-# Build Aqua Focus packages (artifacts only — not published to Releases)
-# Linux + macOS. Download zip from Actions → put into downloads/
-
-name: build-unix-packages
+name: build-and-release
 
 on:
   workflow_dispatch:
   push:
+    branches: [main]
     paths:
       - "main.py"
       - "i18n.py"
@@ -13,57 +11,94 @@ on:
       - "settings_store.py"
       - "requirements.txt"
       - "assets/**"
-      - "scripts/build_unix.sh"
-      - "scripts/make_release_unix.sh"
+      - "scripts/**"
+      - "installer/**"
+      - "aqua_focus.spec"
       - ".github/workflows/build-unix-packages.yml"
 
 permissions:
-  contents: read
+  contents: write
+
+env:
+  VERSION: "1.2.0"
 
 jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Inno Setup
+        shell: powershell
+        run: choco install innosetup -y --no-progress
+      - name: Build Windows
+        shell: powershell
+        run: .\scripts\make_release_win.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: |
+            dist/releases/AquaFocusSetup-1.2.0.exe
+            dist/releases/AquaFocus-Windows-Portable-1.2.0.zip
+          if-no-files-found: error
+
   linux:
-    name: Linux portable
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
-      - name: System deps
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-tk libportaudio2 portaudio19-dev
-
-      - name: Build package
+      - run: sudo apt-get update && sudo apt-get install -y python3-tk libportaudio2 portaudio19-dev
+      - name: Build Linux / Ubuntu
         run: |
           chmod +x scripts/build_unix.sh scripts/make_release_unix.sh
-          ./scripts/make_release_unix.sh
-
+          VERSION="$VERSION" ./scripts/make_release_unix.sh
+          cp "dist/releases/AquaFocus-Linux-Portable-$VERSION.tar.gz" "dist/releases/AquaFocus-Ubuntu-Portable-$VERSION.tar.gz"
       - uses: actions/upload-artifact@v4
         with:
-          name: AquaFocus-Linux-Portable
-          path: dist/releases/AquaFocus-Linux-Portable-*.tar.gz
-          if-no-files-found: error
+          name: release-linux
+          path: dist/releases/AquaFocus-*-Portable-1.2.0.tar.gz
 
   macos:
-    name: macOS app zip
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
-      - name: Build package
+      - name: Build macOS
         run: |
           chmod +x scripts/build_unix.sh scripts/make_release_unix.sh
-          ./scripts/make_release_unix.sh
-
+          VERSION="$VERSION" ./scripts/make_release_unix.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: AquaFocus-macOS
-          path: dist/releases/AquaFocus-macOS-*.zip
-          if-no-files-found: error
+          name: release-macos
+          path: dist/releases/AquaFocus-macOS-1.2.0.zip
+
+  release:
+    needs: [windows, linux, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: release-assets
+          merge-multiple: true
+      - name: Publish v1.2.0
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.2.0
+          target_commitish: main
+          name: Aqua Focus v1.2.0
+          make_latest: true
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            release-assets/AquaFocusSetup-1.2.0.exe
+            release-assets/AquaFocus-Windows-Portable-1.2.0.zip
+            release-assets/AquaFocus-macOS-1.2.0.zip
+            release-assets/AquaFocus-Linux-Portable-1.2.0.tar.gz
+            release-assets/AquaFocus-Ubuntu-Portable-1.2.0.tar.gz
