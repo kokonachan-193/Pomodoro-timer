@@ -2368,6 +2368,13 @@ class WaterTimer(ctk.CTk):
             command=self.workspace.open_tasks,
         )
         self.dashboard_tasks_btn.pack(side="right", padx=(6, 0))
+        self.dashboard_music_btn = ctk.CTkButton(
+            self.dashboard_actions, text="Music", width=78, height=34, corner_radius=17,
+            fg_color="transparent", hover_color=self.theme.glow,
+            border_width=1, border_color=self.theme.glow, text_color=self.theme.text,
+            command=self.minimal_shell.open_music_library,
+        )
+        self.dashboard_music_btn.pack(side="right", padx=(6, 0))
         self.dashboard_stats_btn = ctk.CTkButton(
             self.dashboard_actions, text="Stats", width=78, height=34, corner_radius=17,
             fg_color="transparent", hover_color=self.theme.glow,
@@ -2765,6 +2772,17 @@ class WaterTimer(ctk.CTk):
             text_color=self.theme.text, corner_radius=12,
             command=self.toggle_focus_menu,
         )
+        # Music is intentionally one tap away while focusing.  This button opens
+        # the same playlist panel and places the caret in the URL field, so adding
+        # a track never requires leaving the focus screen.
+        self.focus_music_btn = ctk.CTkButton(
+            self.wave_frame, text="♫", width=44, height=44,
+            font=ctk.CTkFont(size=18),
+            fg_color=self.theme.sidebar, hover_color=self.theme.glow,
+            border_width=1, border_color=self.theme.glow,
+            text_color=self.theme.accent, corner_radius=12,
+            command=self.open_focus_music_menu,
+        )
 
         self.menu_panel = ctk.CTkFrame(
             self.wave_frame, width=320, fg_color=self.theme.sidebar,
@@ -3083,9 +3101,13 @@ class WaterTimer(ctk.CTk):
 
         try:
             self.dashboard_more_btn.configure(width=42 if compact else 44, height=34)
-            for quick in (getattr(self, "dashboard_tasks_btn", None), getattr(self, "dashboard_stats_btn", None)):
+            for quick in (
+                getattr(self, "dashboard_music_btn", None),
+                getattr(self, "dashboard_tasks_btn", None),
+                getattr(self, "dashboard_stats_btn", None),
+            ):
                 if quick is not None:
-                    quick.configure(width=70 if very_compact else 78, height=34)
+                    quick.configure(width=62 if very_compact else (70 if compact else 78), height=34)
         except Exception:
             pass
 
@@ -3684,6 +3706,14 @@ class WaterTimer(ctk.CTk):
             self.close_focus_menu()
         else:
             self.open_focus_menu()
+
+    def open_focus_music_menu(self):
+        """Open the in-focus playlist composer and focus its add-track field."""
+        self.open_focus_menu()
+        try:
+            self.menu_url_entry.focus_set()
+        except Exception:
+            pass
 
     def open_focus_menu(self):
         self._menu_open = True
@@ -4932,7 +4962,7 @@ class WaterTimer(ctk.CTk):
         self.wave_frame.grid_forget()
         for child in (
             self.canvas, self.status_text, self.time_text, self.hint_text,
-            self.music_live, self.track_badge, self.ctrl_bar, self.menu_btn, self.menu_panel,
+            self.music_live, self.track_badge, self.ctrl_bar, self.menu_btn, self.focus_music_btn, self.menu_panel,
             self.intention_live, self.break_tip_live,
         ):
             try:
