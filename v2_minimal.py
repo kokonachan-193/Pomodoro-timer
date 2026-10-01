@@ -115,12 +115,12 @@ class MinimalShell:
         stats_btn = self._quiet_button(top_actions, "Stats", a.workspace.open_stats)
         tasks_btn = self._quiet_button(top_actions, "Tasks", a.workspace.open_tasks)
         tools_btn = self._quiet_button(top_actions, "•••", self.open_tools, width=44)
+        settings_btn = self._quiet_button(top_actions, "Settings", self.open_settings, width=84)
         stats_btn.pack(side="left", padx=3)
         tasks_btn.pack(side="left", padx=3)
-        tools_btn.pack(side="left", padx=(3, 0))
-        # Settings stays available inside •••.  Keeping the Home header to three
-        # actions makes the layout calmer and prevents crowding at compact widths.
-        self._top_buttons = [stats_btn, tasks_btn, tools_btn]
+        tools_btn.pack(side="left", padx=3)
+        settings_btn.pack(side="left", padx=(3, 0))
+        self._top_buttons = [stats_btn, tasks_btn, tools_btn, settings_btn]
 
         # Responsive content: never use absolute placement here.
         # Fixed place() coordinates caused the card to be clipped on smaller
@@ -131,10 +131,10 @@ class MinimalShell:
         focus_card = ctk.CTkFrame(
             center,
             width=660,
-            fg_color=t.sidebar,
-            corner_radius=28,
+            fg_color=self._blend(t.sidebar, t.bg, 0.08),
+            corner_radius=26,
             border_width=1,
-            border_color=self._blend(t.bg, t.glow, 0.78),
+            border_color=self._blend(t.glow, t.accent, 0.18),
         )
         self.focus_card = focus_card
         focus_card.pack(anchor="n", pady=(14, 0))
@@ -157,11 +157,11 @@ class MinimalShell:
 
         self.intent_entry = ctk.CTkEntry(
             focus_card,
-            height=48,
-            corner_radius=15,
+            height=50,
+            corner_radius=14,
             border_width=1,
-            border_color=self._blend(t.glow, t.accent, 0.28),
-            fg_color=self._blend(t.sidebar, t.bg, 0.25),
+            border_color=self._blend(t.glow, t.accent, 0.34),
+            fg_color=self._blend(t.sidebar, t.bg, 0.34),
             text_color=t.text,
             placeholder_text="Write one concrete next action",
             font=ctk.CTkFont(size=14),
@@ -236,8 +236,8 @@ class MinimalShell:
         self.start_button = ctk.CTkButton(
             focus_card,
             text="Start focus",
-            height=52,
-            corner_radius=18,
+            height=54,
+            corner_radius=15,
             fg_color=t.accent,
             hover_color=t.accent_hover,
             text_color="#071116",
