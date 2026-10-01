@@ -54,6 +54,7 @@ except ImportError:  # pragma: no cover
 from i18n import I18n, PRESET_KEYS, TIP_KEYS, QUOTE_KEYS
 from settings_store import SettingsStore
 from v2_experience import OceanHero, AuxiliaryModes
+from v2_workspace import WorkspacePanels
 from agiu import (
     APP_VERSION,
     AgiuController,
@@ -1675,6 +1676,13 @@ class WaterTimer(ctk.CTk):
             theme_getter=lambda: self.theme,
             font_family=FONT_UI,
         )
+        self.workspace = WorkspacePanels(
+            self,
+            data_dir=app_root() / "data",
+            theme_getter=lambda: self.theme,
+            font_family=FONT_UI,
+            font_bold=FONT_UI_BOLD,
+        )
 
         self.configure(fg_color=self.theme.bg)
         self.setup_ui()
@@ -2070,6 +2078,36 @@ class WaterTimer(ctk.CTk):
             text_color=self.theme.accent,
         )
         self.sidebar_science.pack(padx=16, pady=(4, 0), anchor="w")
+
+        self.workspace_section_lbl = ctk.CTkLabel(
+            self.sidebar, text="WORKSPACE",
+            font=ctk.CTkFont(family=FONT_UI_BOLD, size=10),
+            text_color=self.theme.accent,
+        )
+        self.workspace_section_lbl.pack(pady=(14, 5), padx=16, anchor="w")
+        self.workspace_buttons = []
+        for label, command in (
+            ("Coral Tasks", self.workspace.open_tasks),
+            ("Abyss Stats", self.workspace.open_stats),
+            ("Ocean Soundscape", self.workspace.open_soundscape),
+            ("Reef Extensions", self.workspace.open_extensions),
+        ):
+            btn = ctk.CTkButton(
+                self.sidebar,
+                text=label,
+                height=31,
+                corner_radius=11,
+                fg_color="transparent",
+                hover_color=self.theme.glow,
+                border_width=1,
+                border_color=self.theme.glow,
+                text_color=self.theme.text,
+                font=ctk.CTkFont(family=FONT_UI, size=11),
+                anchor="w",
+                command=command,
+            )
+            btn.pack(padx=14, pady=2, fill="x")
+            self.workspace_buttons.append(btn)
 
         self.lang_section_lbl = ctk.CTkLabel(
             self.sidebar, text=self.t("lang"),
@@ -4239,6 +4277,8 @@ class WaterTimer(ctk.CTk):
             return
 
         self.intention = self.entry_intention.get().strip()
+        if self.intention:
+            self.workspace.current_task = self.intention
         self.is_long_break = False
 
         url = self.entry_music.get().strip()
@@ -4509,6 +4549,12 @@ class WaterTimer(ctk.CTk):
             self.after(50, self.update_loop)
         else:
             if self.mode == "Work":
+                # Record completed focus blocks for Tasks / Abyss Stats.
+                self.workspace.record_focus_session(
+                    self.work_time / 60.0,
+                    "Deep Dive" if self.work_time >= 85 * 60 and self.max_cycles == 1 else "Focus",
+                    self.intention or self.workspace.current_task,
+                )
                 # 計画的休憩: Nサイクルごとに長休憩（クラシックPT + ウルトラディアン配慮）
                 use_long = (self.current_cycle % self.long_break_every == 0)
                 self.start_break_period(long_break=use_long)
