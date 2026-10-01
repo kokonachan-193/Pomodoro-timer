@@ -1713,14 +1713,11 @@ class WaterTimer(ctk.CTk):
         self._refresh_temptation_btn()
         self.apply_language()
         self._refresh_audio_device_menu()
-        # Keep the full dashboard as the default experience.  The previous
-        # minimal-shell experiment hid too much useful context and made Aqua
-        # Focus feel empty.  We keep MinimalShell available in the codebase for
-        # compatibility, but the feature-complete dashboard is now primary.
-        self._v3_focus = False
-        self._polish_full_dashboard()
-        self._curate_dashboard()
-        self._install_dashboard_responsive()
+        # v2.1.2-style progressive-disclosure Home is the primary experience:
+        # one task, one duration, one primary action. Full functionality remains
+        # available through Tasks / Stats / Settings / ••• without competing
+        # with focus setup. Current crash hardening and focus features stay live.
+        self.minimal_shell.install()
 
         self.bind("<space>", self._hotkey_space)
         self.bind("<Escape>", self._hotkey_esc)
