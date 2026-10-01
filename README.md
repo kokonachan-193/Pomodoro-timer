@@ -37,12 +37,12 @@ ffmpeg is **bundled** on desktop. Existing desktop installs can check GitHub Rel
 
 ## What’s new in 2.1.4
 
-- **Full dashboard restored** — the feature-complete Aqua Focus home is the default again instead of the overly sparse minimal shell
-- **Features stay visible** — Quick Dive, timer rhythm, custom timing, intention, music, playlist controls, volume and primary actions remain directly accessible
-- **Restrained visual polish** — spacing, card radii, borders, typography and button proportions are cleaned up without making the app empty
-- **Sidebar restored** — workspace, language, audio output, updater, Focus Lock, presets, theme and background controls remain available
-- **Minimal-shell crash fix retained** — the previous CTkEntry lifecycle fix remains in the codebase, so legacy widgets are no longer destroyed underneath timer logic
-- **Focus modes preserved** — Focus, Deep Dive, Countdown, Stopwatch and Alarm continue to work from the main interface
+- **CTkEntry crash fixed at the source** — preset changes now ignore stale Tk handles and still update the authoritative timer state, preventing `invalid command name ...ctkentry.!entry`
+- **Responsive dashboard** — compact windows hide the heavy sidebar without destroying it, while large and ultrawide windows keep readable card widths instead of stretching everything
+- **Features preserved** — Quick Dive, custom timing, intention, music, playlist, volume, tasks, stats, soundscapes, extensions, Focus Lock, updater, themes and background controls remain available
+- **Progressive disclosure** — advanced and occasional controls are reachable from a compact `•••` menu instead of crowding the main screen
+- **Focus music controls restored** — the in-session menu stays reachable so tracks can be added, skipped, or navigated without leaving focus
+- **Rising-water progress animation** — the focus view now fills upward with a subtle animated waterline tied to elapsed focus time; Reduce Motion still disables the motion
 
 ### Carried forward from 2.0.0
 
