@@ -41,7 +41,14 @@ jobs:
             python main.py --preview-size "$SIZE" > "/tmp/aquafocus-$OUT.log" 2>&1 &
             APP_PID=$!
             sleep 8
-            scrot -u "$OUT.png" || scrot "$OUT.png"
+            scrot "$OUT-full.png"
+            python - "$OUT-full.png" "$OUT.png" "$SIZE" <<'PY'
+          import sys
+          from PIL import Image
+          src, dst, size = sys.argv[1:4]
+          w, h = (int(v) for v in size.lower().split("x", 1))
+          Image.open(src).crop((0, 0, w, h)).save(dst)
+          PY
             kill $APP_PID || true
             test -s "$OUT.png"
           }
@@ -52,7 +59,11 @@ jobs:
           python main.py --preview-size 1120x820 --preview-focus > /tmp/aquafocus-focus.log 2>&1 &
           FOCUS_PID=$!
           sleep 8
-          scrot -u focus.png || scrot focus.png
+          scrot focus-full.png
+          python - <<'PY'
+          from PIL import Image
+          Image.open("focus-full.png").crop((0, 0, 1120, 820)).save("focus.png")
+          PY
           kill $FOCUS_PID || true
           test -s focus.png
 
