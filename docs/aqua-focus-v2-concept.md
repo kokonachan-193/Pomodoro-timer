@@ -1257,6 +1257,32 @@ Current desktop and Android implementations can gradually migrate toward this st
 
 ---
 
+## Implementation status — v2 foundation
+
+Implemented on 2026-10-01:
+
+- [x] Animated Deep Sea home hero
+- [x] Slow caustic-light and bubble ambience
+- [x] Reduce Motion preference
+- [x] Quick Dive mode launcher
+- [x] Deep Dive 90-minute low-distraction mode
+- [x] Countdown tool
+- [x] Stopwatch / open-ended Flow timer foundation
+- [x] Blue Alarm one-time alarm foundation
+- [x] Existing immersive wave focus view retained
+- [x] Existing music / playlist / audio output paths retained
+- [ ] Full navigation shell (Home / Focus / Tasks / Music / Stats / Extensions / Settings)
+- [ ] Task system
+- [ ] Statistics dashboard
+- [ ] Ambient audio mixer
+- [ ] Extension loader / store
+- [ ] Theme store
+- [ ] Cloud sync
+
+The current implementation deliberately keeps the proven Pomodoro/music engine intact and layers the v2 experience around it. This reduces regression risk while the UI is migrated incrementally.
+
+---
+
 # 30. Final direction
 
 Aqua Focus should evolve from:
