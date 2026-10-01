@@ -12,7 +12,7 @@
 <p align="center">
   <a href="README.md">English</a>
   ·
-  <b>v2.1.1</b>
+  <b>v2.1.2</b>
   ·
   Windows · macOS · Ubuntu · Linux · Android
 </p>
@@ -25,25 +25,26 @@ GitHub Release から使用するOS向けのパッケージを取得できます
 
 | プラットフォーム | パッケージ | 使い方 |
 | :--- | :--- | :--- |
-| **Windows 10 / 11** | `AquaFocusSetup-2.1.1.exe` | インストーラ · おすすめ |
-| **Windows** | `AquaFocus-Windows-Portable-2.1.1.zip` | 解凍 → `AquaFocus.exe` |
-| **macOS** | `AquaFocus-macOS-2.1.1.zip` | 解凍 → `AquaFocus.app` |
-| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.1.1.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
-| **Android 8+** | `AquaFocus-Android-2.1.1.apk` | APKをインストール |
+| **Windows 10 / 11** | `AquaFocusSetup-2.1.2.exe` | インストーラ · おすすめ |
+| **Windows** | `AquaFocus-Windows-Portable-2.1.2.zip` | 解凍 → `AquaFocus.exe` |
+| **macOS** | `AquaFocus-macOS-2.1.2.zip` | 解凍 → `AquaFocus.app` |
+| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.1.2.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
+| **Android 8+** | `AquaFocus-Android-2.1.2.apk` | APKをインストール |
 
 デスクトップ版は ffmpeg **同梱**。既存版は **AGIU** からGitHub Releasesの更新を確認できます。
 
 ---
 
-## v2.1.1 の新機能
+## v2.1.2 の新機能
 
-- **Attention-first Home** — 「1タスク・1時間選択・Start」を中心に全面再設計
-- **Focus画面刷新** — 時間・細い進捗リング・今やるタスクだけを常時表示
-- **Progressive disclosure** — Sound / 詳細ツール / 設定は必要な時だけ表示
-- **Abyss Glass** — 色数を抑えた新しい深海テーマ
-- **終盤の煽るアニメーションを廃止** — 残り10秒でも落ち着いた表示
-- **テーマ変更でも入力保持** — タスクや選択時間を失わない
-- **Android GUI刷新** — モバイルも同じ「1タスク・1セッション」構造へ
+- **Home二重描画を修正** — 起動時にHomeが2回生成されていた原因を修正し、テーマ変更でも色違いの画面が縦に積み上がらなくなりました
+- **UIマウントを安全化** — 再構築前に古いsurfaceを必ず破棄し、ゴースト表示を防止
+- **本格レスポンシブ化** — Compact / Normal / Wide / Ultra の段階で、小画面でも大画面でもカード幅・余白・文字サイズを自動調整
+- **機能導線を復元** — Tasks / Stats / Extensions / Music Library / Soundscape / Countdown / Stopwatch / Alarm / Custom Session を `…` に整理
+- **Settingsを復元** — Theme / Reduce Motion / 背景画像 / 言語 / 音声出力 / Focus Lock / 除外設定 / 更新設定を整理して戻しました
+- **Full controls** — 旧画面にあった全機能を `… → Full controls` からそのまま利用可能
+- **Music Library追加** — プレイリストの追加・再生・削除をモダン画面から操作可能
+- **大画面の見え方も改善** — 4K/大型画面で中央カードだけ極端に小さくならないよう調整
 
 ### v2.0.0 から継続
 
