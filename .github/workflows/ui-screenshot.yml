@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   screenshot:
@@ -48,6 +48,27 @@ jobs:
           capture 640x720 compact
           capture 1120x820 standard
           capture 1720x980 wide
+
+          python main.py --preview-size 1120x820 --preview-focus > /tmp/aquafocus-focus.log 2>&1 &
+          FOCUS_PID=$!
+          sleep 8
+          scrot -u focus.png || scrot focus.png
+          kill $FOCUS_PID || true
+          test -s focus.png
+
+      - name: Publish preview images on main
+        if: github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p docs/ui-preview
+          cp compact.png standard.png wide.png focus.png docs/ui-preview/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/ui-preview/*.png
+          if ! git diff --cached --quiet; then
+            git commit -m "Update UI preview screenshots [skip ci]"
+            git push
+          fi
+
       - name: Upload screenshots
         uses: actions/upload-artifact@v4
         with:
@@ -56,4 +77,5 @@ jobs:
             compact.png
             standard.png
             wide.png
+            focus.png
           if-no-files-found: error
