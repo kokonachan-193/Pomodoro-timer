@@ -1679,6 +1679,8 @@ class WaterTimer(ctk.CTk):
         self.settings = SettingsStore(settings_path)
         self.i18n = I18n(settings_path)
         self.reduce_motion = bool(self.settings.get("reduce_motion", False))
+        saved_bg = str(self.settings.get("custom_bg_path", "") or "").strip()
+        self._custom_bg_path = saved_bg if saved_bg and Path(saved_bg).exists() else None
         self._ffmpeg_path = ensure_bundled_ffmpeg()
         self._exclude_dialog: ctk.CTkToplevel | None = None
         self._audio_device_map: dict[str, int] = {}
@@ -1708,7 +1710,10 @@ class WaterTimer(ctk.CTk):
         self.configure(fg_color=self.theme.bg)
         self.setup_ui()
         self.apply_theme(self.theme.name, animate=False)
-        self.load_theme_background(self.theme.name)
+        if self._custom_bg_path:
+            self._set_background_image(self._custom_bg_path, label=Path(self._custom_bg_path).name)
+        else:
+            self.load_theme_background(self.theme.name)
         self._refresh_playlist_ui()
         self._refresh_temptation_btn()
         self.apply_language()
@@ -2018,6 +2023,11 @@ class WaterTimer(ctk.CTk):
         self._refresh_playlist_ui()
         self._update_live_films_language()
         self._report_ffmpeg_status()
+        if getattr(self, "minimal_shell", None) is not None and getattr(self.minimal_shell, "surface", None) is not None:
+            try:
+                self.minimal_shell.refresh_theme()
+            except Exception:
+                pass
 
     def _update_live_films_language(self) -> None:
         quotes = self._focus_quotes()
@@ -3467,11 +3477,17 @@ class WaterTimer(ctk.CTk):
         if not path:
             return
         self._custom_bg_path = path
+        self.settings.set("custom_bg_path", path)
         self._set_background_image(path, label=Path(path).name)
+        if getattr(self, "minimal_shell", None) is not None:
+            self.minimal_shell.refresh_background()
 
     def reset_background(self):
         self._custom_bg_path = None
+        self.settings.set("custom_bg_path", "")
         self.load_theme_background(self.theme.name)
+        if getattr(self, "minimal_shell", None) is not None:
+            self.minimal_shell.refresh_background()
 
     def _set_background_image(self, path: str | None, label: str = ""):
         self._bg_photo = None
@@ -3499,7 +3515,9 @@ class WaterTimer(ctk.CTk):
         left, top = (nw - w) // 2, (nh - h) // 2
         cropped = resized.crop((left, top, left + w, top + h))
         dark = Image.new("RGB", (w, h), (10, 16, 22))
-        blended = Image.blend(cropped, dark, 0.30)
+        dim = float(self.settings.get("background_dim", 0.30) or 0.30)
+        dim = max(0.0, min(0.85, dim))
+        blended = Image.blend(cropped, dark, dim)
         self._bg_photo = ImageTk.PhotoImage(blended)
         self._bg_cache_size = (w, h)
         return self._bg_photo

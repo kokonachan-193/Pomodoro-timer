@@ -42,6 +42,8 @@ class MinimalShell:
         self.focus_title = None
         self._top_buttons = []
         self._home_resize_after = None
+        self.home_bg = None
+        self._home_bg_photo = None
 
     # ------------------------------------------------------------------ home
     def install(self):
@@ -77,6 +79,8 @@ class MinimalShell:
 
         self.surface = ctk.CTkFrame(a.main_container, fg_color=t.bg, corner_radius=0)
         self.surface.pack(fill="both", expand=True)
+        self.home_bg = tk.Label(self.surface, bd=0, highlightthickness=0, bg=t.bg)
+        self.home_bg.place(x=0, y=0, relwidth=1, relheight=1)
 
         # The minimal shell must remain usable as a genuinely small desktop
         # utility.  The legacy app used 940x640 as its minimum which meant the
@@ -87,7 +91,7 @@ class MinimalShell:
             pass
 
         # generous at normal sizes, automatically tightened by _apply_home_layout
-        shell = ctk.CTkFrame(self.surface, fg_color="transparent")
+        shell = ctk.CTkFrame(self.home_bg, fg_color="transparent")
         shell.pack(fill="both", expand=True, padx=30, pady=22)
         self.shell = shell
 
@@ -105,17 +109,17 @@ class MinimalShell:
             text_color=t.text,
         ).pack(anchor="w")
         ctk.CTkLabel(
-            brand, text="one task. one session.",
+            brand, text=a.t("home_tagline"),
             font=ctk.CTkFont(size=10), text_color=t.muted,
         ).pack(anchor="w", pady=(1, 0))
 
         top_actions = ctk.CTkFrame(top, fg_color="transparent")
         self.top_actions = top_actions
         top_actions.pack(side="right")
-        stats_btn = self._quiet_button(top_actions, "Stats", a.workspace.open_stats)
-        tasks_btn = self._quiet_button(top_actions, "Tasks", a.workspace.open_tasks)
+        stats_btn = self._quiet_button(top_actions, a.t("nav_stats"), a.workspace.open_stats)
+        tasks_btn = self._quiet_button(top_actions, a.t("nav_tasks"), a.workspace.open_tasks)
         tools_btn = self._quiet_button(top_actions, "•••", self.open_tools, width=44)
-        settings_btn = self._quiet_button(top_actions, "Settings", self.open_settings, width=84)
+        settings_btn = self._quiet_button(top_actions, a.t("nav_settings"), self.open_settings, width=84)
         stats_btn.pack(side="left", padx=3)
         tasks_btn.pack(side="left", padx=3)
         tools_btn.pack(side="left", padx=3)
@@ -142,14 +146,14 @@ class MinimalShell:
         focus_card.grid_columnconfigure(0, weight=1)
 
         eyebrow = ctk.CTkLabel(
-            focus_card, text="FOCUS SESSION",
+            focus_card, text=a.t("home_focus_session"),
             font=ctk.CTkFont(family=a.FONT_UI_BOLD, size=9, weight="bold"),
             text_color=t.accent,
         )
         eyebrow.grid(row=0, column=0, padx=34, pady=(26, 5), sticky="w")
 
         self.focus_title = ctk.CTkLabel(
-            focus_card, text="What will you finish?",
+            focus_card, text=a.t("home_question"),
             font=ctk.CTkFont(family=a.FONT_UI_BOLD, size=23, weight="bold"),
             text_color=t.text,
         )
@@ -163,7 +167,7 @@ class MinimalShell:
             border_color=self._blend(t.glow, t.accent, 0.34),
             fg_color=self._blend(t.sidebar, t.bg, 0.34),
             text_color=t.text,
-            placeholder_text="Write one concrete next action",
+            placeholder_text=a.t("home_task_ph"),
             font=ctk.CTkFont(size=14),
         )
         self.intent_entry.grid(row=2, column=0, padx=34, pady=(14, 18), sticky="ew")
@@ -178,7 +182,7 @@ class MinimalShell:
         duration_area = ctk.CTkFrame(focus_card, fg_color="transparent")
         duration_area.grid(row=3, column=0, padx=34, sticky="ew")
         ctk.CTkLabel(
-            duration_area, text="Session",
+            duration_area, text=a.t("home_session"),
             font=ctk.CTkFont(size=11), text_color=t.muted,
         ).pack(side="left")
 
@@ -187,7 +191,7 @@ class MinimalShell:
         for key in ("25", "50", "90"):
             b = ctk.CTkButton(
                 chips,
-                text=f"{key} min",
+                text=a.t("home_min", n=key),
                 width=74,
                 height=34,
                 corner_radius=17,
@@ -219,7 +223,7 @@ class MinimalShell:
         sound_row.grid(row=6, column=0, padx=34, sticky="ew")
         self.sound_button = ctk.CTkButton(
             sound_row,
-            text="Sound  ·  optional",
+            text=a.t("home_sound_optional"),
             height=32,
             corner_radius=16,
             fg_color="transparent",
@@ -235,7 +239,7 @@ class MinimalShell:
 
         self.start_button = ctk.CTkButton(
             focus_card,
-            text="Start focus",
+            text=a.t("home_start"),
             height=54,
             corner_radius=15,
             fg_color=t.accent,
@@ -305,6 +309,8 @@ class MinimalShell:
 
         outer_x = 12 if very_compact else (18 if compact else (42 if wide else 30))
         outer_y = 10 if short else (32 if wide else 22)
+        home_scale = max(0.82, min(1.22, float(self.app.settings.get("home_scale", 1.0) or 1.0)))
+        self.refresh_background()
         try:
             self.shell.pack_configure(padx=outer_x, pady=outer_y)
         except Exception:
@@ -342,7 +348,7 @@ class MinimalShell:
             target = min(700, int(available * 0.68))
         # Never force a 360px card into a viewport that has less room.  The old
         # clamp could still overflow on Windows DPI scaling / tiny windows.
-        card_width = max(300, min(target, available))
+        card_width = max(300, min(int(target * home_scale), available))
         try:
             self.focus_card.configure(width=card_width, corner_radius=22 if compact else 28)
         except Exception:
@@ -366,7 +372,7 @@ class MinimalShell:
         try:
             self.focus_title.configure(font=ctk.CTkFont(
                 family=self.app.FONT_UI_BOLD,
-                size=19 if very_compact else (21 if compact else (29 if ultra else (26 if wide else 23))),
+                size=max(16, int((19 if very_compact else (21 if compact else (29 if ultra else (26 if wide else 23)))) * home_scale)),
                 weight="bold",
             ))
         except Exception:
@@ -374,7 +380,7 @@ class MinimalShell:
         try:
             self.duration_label.configure(font=ctk.CTkFont(
                 family=self.app.FONT_UI_BOLD,
-                size=46 if very_compact else (52 if compact else (78 if ultra else (68 if wide else 60))),
+                size=max(40, int((46 if very_compact else (52 if compact else (78 if ultra else (68 if wide else 60)))) * home_scale)),
                 weight="bold",
             ))
         except Exception:
@@ -405,6 +411,22 @@ class MinimalShell:
             pass
         self._home_resize_after = None
 
+    def refresh_background(self):
+        """Refresh the persisted/theme background behind the clean Home."""
+        if self.home_bg is None or self.surface is None:
+            return
+        try:
+            w = max(2, int(self.surface.winfo_width()))
+            h = max(2, int(self.surface.winfo_height()))
+            photo = self.app._get_bg_photo(w, h)
+            self._home_bg_photo = photo
+            if photo is not None:
+                self.home_bg.configure(image=photo, bg=self.app.theme.bg)
+            else:
+                self.home_bg.configure(image="", bg=self.app.theme.bg)
+        except Exception:
+            pass
+
     def _apply_focus_scale(self):
         """Scale focus typography/controls to the current canvas, with sane touch targets."""
         a = self.app
@@ -433,12 +455,12 @@ class MinimalShell:
         except Exception:
             minutes = 0
         if minutes < 1:
-            return "Nothing to catch up on. Start with one clear session."
+            return self.app.t("today_empty")
         h = int(minutes // 60)
         m = int(minutes % 60)
         if h:
-            return f"Today · {h}h {m:02d}m focused"
-        return f"Today · {m}m focused"
+            return self.app.t("today_hm", h=h, m=f"{m:02d}")
+        return self.app.t("today_m", m=m)
 
     def _quiet_button(self, parent, text, command, width=72):
         t = self.app.theme
@@ -462,20 +484,16 @@ class MinimalShell:
             )
         if self.duration_label:
             self.duration_label.configure(text=f"{key}:00")
-        rhythm_copy = {
-            "25": "25 min focus  ·  5 min reset",
-            "50": "50 min focus  ·  10 min reset",
-            "90": "90 min deep dive  ·  20 min recovery",
-        }
+        rhythm_copy = {"25": a.t("rhythm_25"), "50": a.t("rhythm_50"), "90": a.t("rhythm_90")}
         if self.rhythm_label:
-            self.rhythm_label.configure(text=rhythm_copy.get(key, "Custom focus rhythm"))
+            self.rhythm_label.configure(text=rhythm_copy.get(key, a.t("rhythm_custom")))
         work, brk, name, long_break, every, cycles, blurb, preset_key = self.PRESETS[key]
         a.set_preset(work, brk, name, long_break=long_break, long_every=every, cycles=cycles, blurb=blurb, key=preset_key)
 
     def toggle_sound(self):
         if self._sound_open:
             self.sound_drawer.grid_forget()
-            self.sound_button.configure(text="Sound  ·  optional")
+            self.sound_button.configure(text=a.t("home_sound_optional"))
             self._sound_open = False
             return
 
@@ -490,7 +508,7 @@ class MinimalShell:
             border_width=1,
             border_color=t.glow,
             fg_color=self._blend(t.sidebar, t.bg, 0.25),
-            placeholder_text="YouTube / Spotify / direct audio URL",
+            placeholder_text=a.t("home_music_ph"),
             font=ctk.CTkFont(size=12),
         )
         self.music_entry.pack(fill="x", pady=(2, 8))
@@ -504,18 +522,18 @@ class MinimalShell:
         actions = ctk.CTkFrame(self.sound_drawer, fg_color="transparent")
         actions.pack(fill="x")
         ctk.CTkButton(
-            actions, text="Ambient", width=88, height=32, corner_radius=16,
+            actions, text=a.t("home_ambient"), width=88, height=32, corner_radius=16,
             fg_color="transparent", hover_color=t.glow,
             border_width=1, border_color=t.glow, text_color=t.muted,
             command=a.workspace.open_soundscape,
         ).pack(side="left")
         ctk.CTkLabel(
-            actions, text="Music stays secondary to the task.",
+            actions, text=a.t("home_music_secondary"),
             font=ctk.CTkFont(size=10), text_color=t.muted,
         ).pack(side="right")
 
         self.sound_drawer.grid(row=7, column=0, padx=34, sticky="ew")
-        self.sound_button.configure(text="Sound  ·  hide")
+        self.sound_button.configure(text=a.t("home_sound_hide"))
         self._sound_open = True
 
     def start_focus(self):
@@ -583,6 +601,8 @@ class MinimalShell:
         self.focus_title = None
         self._top_buttons = []
         self._home_resize_after = None
+        self.home_bg = None
+        self._home_bg_photo = None
         self._sound_open = False
         self.install()
 
@@ -634,18 +654,21 @@ class MinimalShell:
         motion = 0.0 if a.reduce_motion else (0.25 if frozen else 1.0)
         self._focus_phase += 0.012 * motion
 
-        # Deep gradient: fewer bands = calmer visual field.
-        for i in range(12):
-            y0 = int(i * h / 12)
-            y1 = int((i + 1) * h / 12) + 1
-            amount = 0.025 + (i / 11) * 0.18
-            c.create_rectangle(0, y0, w, y1, fill=self._blend(t.bg, t.glow, amount), outline="")
+        photo = a._get_bg_photo(w, h)
+        if photo is not None:
+            c.create_image(0, 0, image=photo, anchor="nw")
+        else:
+            for i in range(12):
+                y0 = int(i * h / 12)
+                y1 = int((i + 1) * h / 12) + 1
+                amount = 0.025 + (i / 11) * 0.18
+                c.create_rectangle(0, y0, w, y1, fill=self._blend(t.bg, t.glow, amount), outline="")
 
-        # Two very low-contrast light shafts.
-        if not a.reduce_motion:
+        strength = max(0.25, min(1.8, float(a.settings.get("focus_visual_strength", 1.0) or 1.0)))
+        if not a.reduce_motion and a.workspace.extension_enabled("animation-light-shafts"):
             for i in range(2):
                 x = w * (0.30 + i * 0.38) + math.sin(self._focus_phase + i * 1.9) * 18
-                col = self._blend(t.bg, t.accent, 0.055)
+                col = self._blend(t.bg, t.accent, min(0.12, 0.055 * strength))
                 c.create_polygon(x-45, 0, x+10, 0, x+120, h, x-100, h, fill=col, outline="")
 
         progress = 0.0
@@ -655,30 +678,31 @@ class MinimalShell:
         # Aqua progress: during Work, a restrained waterline rises with elapsed
         # focus time. It sits behind the timer and is disabled by Reduce Motion.
         # On breaks the surface relaxes back down so the metaphor stays readable.
-        if a.mode == "Work":
-            level_progress = progress
-        else:
-            level_progress = max(0.0, 0.18 - progress * 0.18)
-        water_y = h * (0.94 - 0.54 * level_progress)
-        wave_amp = 0.0 if a.reduce_motion else max(2.0, h * 0.006)
-        wave_points = [(0, h)]
-        segments = 24
-        for i in range(segments + 1):
-            x = w * i / segments
-            phase = self._focus_phase * 3.2 + i * 0.72
-            y = water_y + math.sin(phase) * wave_amp
-            wave_points.append((x, y))
-        wave_points.append((w, h))
-        fill = self._blend(t.bg, t.accent if a.mode == "Work" else t.wave_front_break, 0.10)
-        edge = self._blend(t.bg, t.accent if a.mode == "Work" else t.wave_front_break, 0.34)
-        c.create_polygon(*[coord for point in wave_points for coord in point], fill=fill, outline="")
-        line_points = []
-        for i in range(segments + 1):
-            x = w * i / segments
-            phase = self._focus_phase * 3.2 + i * 0.72
-            y = water_y + math.sin(phase) * wave_amp
-            line_points.extend((x, y))
-        c.create_line(*line_points, fill=edge, width=2, smooth=True)
+        if a.workspace.extension_enabled("animation-rising-water"):
+            if a.mode == "Work":
+                level_progress = progress
+            else:
+                level_progress = max(0.0, 0.18 - progress * 0.18)
+            water_y = h * (0.94 - 0.54 * level_progress)
+            wave_amp = 0.0 if a.reduce_motion else max(2.0, h * 0.006 * strength)
+            wave_points = [(0, h)]
+            segments = 24
+            for i in range(segments + 1):
+                x = w * i / segments
+                phase = self._focus_phase * 3.2 + i * 0.72
+                y = water_y + math.sin(phase) * wave_amp
+                wave_points.append((x, y))
+            wave_points.append((w, h))
+            fill = self._blend(t.bg, t.accent if a.mode == "Work" else t.wave_front_break, min(0.22, 0.10 * strength))
+            edge = self._blend(t.bg, t.accent if a.mode == "Work" else t.wave_front_break, min(0.62, 0.34 * strength))
+            c.create_polygon(*[coord for point in wave_points for coord in point], fill=fill, outline="")
+            line_points = []
+            for i in range(segments + 1):
+                x = w * i / segments
+                phase = self._focus_phase * 3.2 + i * 0.72
+                y = water_y + math.sin(phase) * wave_amp
+                line_points.extend((x, y))
+            c.create_line(*line_points, fill=edge, width=max(1, int(2 * strength)), smooth=True)
 
         cx, cy = w / 2, h * 0.40
         radius = min(w, h) * (0.17 if scale < 0.78 else 0.185)
@@ -703,8 +727,8 @@ class MinimalShell:
             )
 
         # sparse depth particles
-        if not a.reduce_motion:
-            for i in range(8):
+        if not a.reduce_motion and a.workspace.extension_enabled("animation-depth-particles"):
+            for i in range(max(2, int(8 * strength))):
                 x = ((i * 149) % max(1, int(w))) + math.sin(self._focus_phase * 1.2 + i) * 12
                 y = h - ((self._focus_phase * (18 + i) + i * 83) % (h + 30))
                 r = 1 + (i % 2)
@@ -715,36 +739,36 @@ class MinimalShell:
         a = self.app
         t = a.theme
         w = ctk.CTkToplevel(a)
-        w.title("Aqua Focus · More")
+        w.title(f"Aqua Focus · {a.t('more_title')}")
         w.geometry("520x650")
         w.minsize(460, 500)
         w.configure(fg_color=t.bg)
 
         body = ctk.CTkScrollableFrame(w, fg_color="transparent")
         body.pack(fill="both", expand=True, padx=10, pady=10)
-        self._dialog_heading(body, "More", "All features stay available without crowding Home.")
+        self._dialog_heading(body, a.t("more_title"), a.t("more_subtitle"))
 
         groups = (
-            ("FOCUS TOOLS", (
-                ("Deep Dive", "90-minute low-distraction focus", a.start_deep_dive_mode),
-                ("Custom session", "Choose your own work / break rhythm", self.open_custom_session),
-                ("Countdown", "A single timer", a.v2_modes.open_countdown),
-                ("Stopwatch", "Open-ended flow", a.v2_modes.open_stopwatch),
-                ("Alarm", "One-time reminder", a.v2_modes.open_alarm),
+            (a.t("group_focus_tools"), (
+                (a.t("deep_dive"), a.t("deep_dive_desc"), a.start_deep_dive_mode),
+                (a.t("custom_session"), a.t("custom_session_desc"), self.open_custom_session),
+                (a.t("countdown"), a.t("countdown_desc"), a.v2_modes.open_countdown),
+                (a.t("stopwatch"), a.t("stopwatch_desc"), a.v2_modes.open_stopwatch),
+                (a.t("alarm"), a.t("alarm_desc"), a.v2_modes.open_alarm),
             )),
-            ("WORKSPACE", (
-                ("Tasks", "Plan and track focused minutes", a.workspace.open_tasks),
-                ("Stats", "Today, week and recent sessions", a.workspace.open_stats),
-                ("Extensions", "Themes, sounds and presets", a.workspace.open_extensions),
+            (a.t("group_workspace"), (
+                (a.t("nav_tasks"), a.t("tasks_desc"), a.workspace.open_tasks),
+                (a.t("nav_stats"), a.t("stats_desc"), a.workspace.open_stats),
+                (a.t("extensions_title"), a.t("extensions_desc"), a.workspace.open_extensions),
             )),
-            ("MUSIC & SOUND", (
-                ("Music library", "Playlist, add, play and remove tracks", self.open_music_library),
-                ("Ambient sound", "Ocean, rain and brown noise", a.workspace.open_soundscape),
-                ("Prepare music", "Resolve a stream before focus", a.preload_music),
+            (a.t("group_music_sound"), (
+                (a.t("music_library"), a.t("music_library_desc"), self.open_music_library),
+                (a.t("ambient_sound"), a.t("ambient_sound_desc"), a.workspace.open_soundscape),
+                (a.t("preload_music"), a.t("prepare_music_desc"), a.preload_music),
             )),
-            ("ADVANCED", (
-                ("Full controls", "Open every legacy control in one place", self.open_advanced_workspace),
-                ("Settings", "Appearance, audio, focus lock, language and updates", self.open_settings),
+            (a.t("group_advanced"), (
+                (a.t("full_controls"), a.t("full_controls_desc"), self.open_advanced_workspace),
+                (a.t("nav_settings"), a.t("settings_desc"), self.open_settings),
             )),
         )
         for group, items in groups:
@@ -763,30 +787,30 @@ class MinimalShell:
         a = self.app
         t = a.theme
         w = ctk.CTkToplevel(a)
-        w.title("Aqua Focus · Music library")
+        w.title(f"Aqua Focus · {a.t('music_library')}")
         w.geometry("620x560")
         w.minsize(520, 440)
         w.configure(fg_color=t.bg)
-        self._dialog_heading(w, "Music library", "Playlist controls stay available without living on Home.")
+        self._dialog_heading(w, a.t("music_library"), a.t("music_library_subtitle"))
 
         composer = ctk.CTkFrame(w, fg_color="transparent")
         composer.pack(fill="x", padx=24, pady=(0, 10))
         url = ctk.CTkEntry(
             composer, height=42, corner_radius=13,
-            placeholder_text="YouTube / Spotify / direct audio URL",
+            placeholder_text=a.t("home_music_ph"),
         )
         url.pack(side="left", fill="x", expand=True, padx=(0, 8))
 
         transport = ctk.CTkFrame(w, fg_color="transparent")
         transport.pack(fill="x", padx=24, pady=(0, 10))
         ctk.CTkButton(
-            transport, text="← Previous", width=92, height=34,
+            transport, text=a.t("previous"), width=92, height=34,
             fg_color=t.sidebar, hover_color=t.glow,
             border_width=1, border_color=t.glow,
             command=a.playlist_prev_track,
         ).pack(side="left", padx=(0, 6))
         ctk.CTkButton(
-            transport, text="Next →", width=92, height=34,
+            transport, text=a.t("next"), width=92, height=34,
             fg_color=t.sidebar, hover_color=t.glow,
             border_width=1, border_color=t.glow,
             command=a.playlist_next_track,
@@ -796,7 +820,7 @@ class MinimalShell:
             a.playlist.continuous = bool(continuous.get())
             a.playlist.save()
         ctk.CTkSwitch(
-            transport, text="Continuous", variable=continuous,
+            transport, text=a.t("continuous"), variable=continuous,
             command=set_continuous, progress_color=t.accent,
             text_color=t.muted,
         ).pack(side="right")
@@ -809,7 +833,7 @@ class MinimalShell:
                 child.destroy()
             if not a.playlist.tracks:
                 ctk.CTkLabel(
-                    body, text="No tracks yet.", text_color=t.muted
+                    body, text=a.t("playlist_empty"), text_color=t.muted
                 ).pack(pady=24)
                 return
             for i, track in enumerate(list(a.playlist.tracks)):
@@ -820,7 +844,7 @@ class MinimalShell:
                     row, text=title[:58], anchor="w", text_color=t.text
                 ).pack(side="left", fill="x", expand=True, padx=12, pady=10)
                 ctk.CTkButton(
-                    row, text="Play", width=58, height=30,
+                    row, text=a.t("play"), width=58, height=30,
                     fg_color=t.glow, hover_color=t.accent_hover,
                     command=lambda idx=i: a.playlist_play_index(idx),
                 ).pack(side="left", padx=4)
@@ -844,7 +868,7 @@ class MinimalShell:
                 pass
 
         ctk.CTkButton(
-            composer, text="Add", width=72, height=42,
+            composer, text=a.t("add"), width=72, height=42,
             fg_color=t.accent, hover_color=t.accent_hover,
             text_color="#071116", command=add,
         ).pack(side="right")
@@ -866,7 +890,7 @@ class MinimalShell:
         if back is None or not back.winfo_exists():
             back = ctk.CTkButton(
                 a.main_container,
-                text="← Clean Home",
+                text=a.t("clean_home"),
                 width=112,
                 height=36,
                 corner_radius=18,
@@ -902,16 +926,16 @@ class MinimalShell:
         a = self.app
         t = a.theme
         w = ctk.CTkToplevel(a)
-        w.title("Aqua Focus · Custom session")
+        w.title(f"Aqua Focus · {a.t('custom_session')}")
         w.geometry("440x360")
         w.resizable(False, False)
         w.configure(fg_color=t.bg)
-        self._dialog_heading(w, "Custom session", "Advanced timing stays out of Home.")
+        self._dialog_heading(w, a.t("custom_session"), a.t("custom_session_subtitle"))
 
         grid = ctk.CTkFrame(w, fg_color="transparent")
         grid.pack(fill="x", padx=24, pady=8)
         fields = []
-        for label, default in (("Focus minutes", "45"), ("Break minutes", "10"), ("Cycles", "2")):
+        for label, default in ((a.t("focus_minutes"), "45"), (a.t("break_minutes"), "10"), (a.t("cycles"), "2")):
             row = ctk.CTkFrame(grid, fg_color="transparent")
             row.pack(fill="x", pady=5)
             ctk.CTkLabel(row, text=label, width=130, anchor="w", text_color=t.muted).pack(side="left")
@@ -936,7 +960,7 @@ class MinimalShell:
             self.start_focus()
 
         ctk.CTkButton(
-            w, text="Start custom session", height=48, corner_radius=18,
+            w, text=a.t("start_custom_session"), height=48, corner_radius=18,
             fg_color=t.accent, hover_color=t.accent_hover, text_color="#071116",
             font=ctk.CTkFont(size=14, weight="bold"), command=apply_and_start,
         ).pack(fill="x", padx=24, pady=(14, 24))
@@ -945,16 +969,16 @@ class MinimalShell:
         a = self.app
         t = a.theme
         w = ctk.CTkToplevel(a)
-        w.title("Aqua Focus · Settings")
+        w.title(f"Aqua Focus · {a.t('nav_settings')}")
         w.geometry("540x680")
         w.minsize(460, 520)
         w.configure(fg_color=t.bg)
 
         body = ctk.CTkScrollableFrame(w, fg_color="transparent")
         body.pack(fill="both", expand=True, padx=12, pady=12)
-        self._dialog_heading(body, "Settings", "Advanced choices belong here, not on Home.")
+        self._dialog_heading(body, a.t("nav_settings"), a.t("settings_subtitle"))
 
-        self._section(body, "Appearance")
+        self._section(body, a.t("appearance"))
         theme = ctk.CTkOptionMenu(
             body, values=list(a.THEMES.keys()), command=lambda value: a.apply_theme(value),
             height=40, corner_radius=12,
@@ -967,33 +991,65 @@ class MinimalShell:
             a.reduce_motion = bool(motion.get())
             a.settings.set("reduce_motion", a.reduce_motion)
         ctk.CTkSwitch(
-            body, text="Reduce motion", variable=motion,
+            body, text=a.t("reduce_motion"), variable=motion,
             command=set_motion, progress_color=t.accent, text_color=t.text,
         ).pack(anchor="w", padx=12, pady=8)
 
-        self._section(body, "Audio")
+        self._section(body, a.t("audio"))
         ctk.CTkButton(
-            body, text="Choose / refresh audio output", height=40,
+            body, text=a.t("choose_audio_output"), height=40,
             fg_color=t.sidebar, hover_color=t.glow,
             border_width=1, border_color=t.glow,
             command=self._audio_settings,
         ).pack(fill="x", padx=12, pady=5)
 
-        self._section(body, "Background")
+        self._section(body, a.t("background"))
         ctk.CTkButton(
-            body, text="Choose background image", height=40,
+            body, text=a.t("choose_background"), height=40,
             fg_color=t.sidebar, hover_color=t.glow,
             border_width=1, border_color=t.glow,
             command=a.pick_background,
         ).pack(fill="x", padx=12, pady=5)
         ctk.CTkButton(
-            body, text="Reset to theme background", height=40,
+            body, text=a.t("reset_background"), height=40,
             fg_color=t.sidebar, hover_color=t.glow,
             border_width=1, border_color=t.glow,
             command=a.reset_background,
         ).pack(fill="x", padx=12, pady=5)
 
-        self._section(body, "Language")
+        self._section(body, a.t("customization"))
+        ctk.CTkLabel(body, text=a.t("background_dim"), text_color=t.muted).pack(anchor="w", padx=12, pady=(4, 0))
+        bg_dim = ctk.CTkSlider(body, from_=0.0, to=0.75, number_of_steps=75, progress_color=t.accent)
+        bg_dim.set(float(a.settings.get("background_dim", 0.30) or 0.30))
+        def set_bg_dim(value):
+            a.settings.set("background_dim", float(value))
+            a._bg_photo = None
+            a._bg_cache_size = None
+            self.refresh_background()
+            if a.wave_frame.winfo_ismapped():
+                a.draw_waves(frozen=a.is_paused)
+        bg_dim.configure(command=set_bg_dim)
+        bg_dim.pack(fill="x", padx=12, pady=(4, 10))
+
+        ctk.CTkLabel(body, text=a.t("home_scale"), text_color=t.muted).pack(anchor="w", padx=12, pady=(4, 0))
+        home_scale = ctk.CTkSlider(body, from_=0.82, to=1.22, number_of_steps=40, progress_color=t.accent)
+        home_scale.set(float(a.settings.get("home_scale", 1.0) or 1.0))
+        home_scale.configure(command=lambda value: (a.settings.set("home_scale", float(value)), self._apply_home_layout()))
+        home_scale.pack(fill="x", padx=12, pady=(4, 10))
+
+        ctk.CTkLabel(body, text=a.t("focus_visual_strength"), text_color=t.muted).pack(anchor="w", padx=12, pady=(4, 0))
+        visual = ctk.CTkSlider(body, from_=0.25, to=1.8, number_of_steps=31, progress_color=t.accent)
+        visual.set(float(a.settings.get("focus_visual_strength", 1.0) or 1.0))
+        visual.configure(command=lambda value: a.settings.set("focus_visual_strength", float(value)))
+        visual.pack(fill="x", padx=12, pady=(4, 10))
+        ctk.CTkLabel(body, text=a.t("animations_in_extensions"), text_color=t.muted, wraplength=450, justify="left").pack(anchor="w", padx=12, pady=(2, 8))
+        ctk.CTkButton(
+            body, text=a.t("open_animation_extensions"), height=40,
+            fg_color=t.sidebar, hover_color=t.glow, border_width=1, border_color=t.glow,
+            command=a.workspace.open_extensions,
+        ).pack(fill="x", padx=12, pady=(0, 8))
+
+        self._section(body, a.t("language"))
         lang = ctk.CTkOptionMenu(
             body,
             values=[a.t("lang_ja"), a.t("lang_en")],
@@ -1003,39 +1059,39 @@ class MinimalShell:
         lang.set(a.t("lang_en") if a.i18n.lang == "en" else a.t("lang_ja"))
         lang.pack(fill="x", padx=12, pady=(0, 8))
 
-        self._section(body, "Focus")
+        self._section(body, a.t("focus"))
         ctk.CTkButton(
             body,
-            text="Disable focus lock" if a._temptation_armed else "Enable focus lock",
+            text=a.t("disable_focus_lock") if a._temptation_armed else a.t("enable_focus_lock"),
             height=40,
             fg_color=t.sidebar, hover_color=t.glow,
             border_width=1, border_color=t.glow,
             command=a.toggle_temptation_guard,
         ).pack(fill="x", padx=12, pady=5)
         ctk.CTkButton(
-            body, text="Focus lock exclusions", height=40,
+            body, text=a.t("focus_lock_exclusions"), height=40,
             fg_color=t.sidebar, hover_color=t.glow,
             border_width=1, border_color=t.glow,
             command=a.open_temptation_exclude_dialog,
         ).pack(fill="x", padx=12, pady=5)
 
-        self._section(body, "App")
+        self._section(body, a.t("app"))
         auto_updates = ctk.BooleanVar(value=bool(a.settings.get("agiu_auto_check", True)))
         def set_auto_updates():
             a.settings.set("agiu_auto_check", bool(auto_updates.get()))
         ctk.CTkSwitch(
-            body, text="Automatically check for updates",
+            body, text=a.t("auto_updates"),
             variable=auto_updates, command=set_auto_updates,
             progress_color=t.accent, text_color=t.text,
         ).pack(anchor="w", padx=12, pady=8)
         ctk.CTkButton(
-            body, text="Check for updates now", height=40,
+            body, text=a.t("check_updates"), height=40,
             fg_color=t.sidebar, hover_color=t.glow,
             border_width=1, border_color=t.glow,
             command=a._agiu_check_manual,
         ).pack(fill="x", padx=12, pady=5)
         ctk.CTkButton(
-            body, text="Open full controls", height=40,
+            body, text=a.t("open_full_controls"), height=40,
             fg_color=t.sidebar, hover_color=t.glow,
             border_width=1, border_color=t.glow,
             command=lambda: (w.destroy(), self.open_advanced_workspace()),
@@ -1047,10 +1103,10 @@ class MinimalShell:
         # Legacy selector remains the source of truth. Show it briefly in a tiny modal.
         t = a.theme
         w = ctk.CTkToplevel(a)
-        w.title("Audio output")
+        w.title(a.t("audio_output"))
         w.geometry("480x190")
         w.configure(fg_color=t.bg)
-        self._dialog_heading(w, "Audio output", "Select where focus audio should play.")
+        self._dialog_heading(w, a.t("audio_output"), a.t("audio_output_subtitle"))
         values = [a.t("audio_pick")] + list(a._audio_device_map.keys())
         menu = ctk.CTkOptionMenu(w, values=values, command=a._on_audio_device_change)
         menu.pack(fill="x", padx=24, pady=10)

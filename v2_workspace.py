@@ -238,6 +238,11 @@ class AmbientMixer:
 
 class WorkspacePanels:
     CATALOG_URL = "https://raw.githubusercontent.com/kokonachan-193/Pomodoro-timer/main/extensions/catalog.json"
+    BUILTIN_ANIMATIONS = [
+        {"id":"animation-rising-water","name_key":"ext_anim_water","desc_key":"ext_anim_water_desc","type":"animation","builtin":True},
+        {"id":"animation-light-shafts","name_key":"ext_anim_light","desc_key":"ext_anim_light_desc","type":"animation","builtin":True},
+        {"id":"animation-depth-particles","name_key":"ext_anim_particles","desc_key":"ext_anim_particles_desc","type":"animation","builtin":True},
+    ]
 
     def __init__(
         self,
@@ -258,9 +263,21 @@ class WorkspacePanels:
         self.current_task = ""
         self.installed_extensions_path = data_dir / "extensions.json"
         self.installed_extensions: list[dict] = self._load_installed()
+        if not any(str(x.get("type")) == "animation" for x in self.installed_extensions):
+            self.installed_extensions.extend(dict(x) for x in self.BUILTIN_ANIMATIONS)
+            self._save_installed()
 
     def _theme(self):
         return self.theme_getter()
+
+    def _t(self, key: str, **kwargs):
+        try:
+            return self.root.t(key, **kwargs)
+        except Exception:
+            return key
+
+    def extension_enabled(self, extension_id: str) -> bool:
+        return any(str(x.get("id")) == str(extension_id) for x in self.installed_extensions)
 
     def _load_installed(self):
         try:
@@ -307,14 +324,14 @@ class WorkspacePanels:
 
     def open_tasks(self):
         t = self._theme()
-        win = self._window("Aqua Focus · Coral Tasks")
-        self._heading(win, "Coral Tasks", "Keep today's work small, visible and connected to focus time.")
+        win = self._window(f"Aqua Focus · {self._t('tasks_title')}")
+        self._heading(win, self._t("tasks_title"), self._t("tasks_subtitle"))
 
         composer = ctk.CTkFrame(win, fg_color=t.sidebar, corner_radius=18, border_width=2, border_color=t.glow)
         composer.pack(fill="x", padx=24, pady=(0, 10))
         entry = ctk.CTkEntry(
             composer, height=46,
-            placeholder_text="What is the next concrete task?",
+            placeholder_text=self._t("tasks_ph"),
             font=ctk.CTkFont(family=self.font_family, size=13),
             text_color=t.text,
             border_color=t.glow,
@@ -329,7 +346,7 @@ class WorkspacePanels:
                 child.destroy()
             items = self.tasks.active() + self.tasks.completed()
             if not items:
-                ctk.CTkLabel(body, text="No tasks yet. Add one small next action.", text_color=t.muted).pack(pady=30)
+                ctk.CTkLabel(body, text=self._t("tasks_empty"), text_color=t.muted).pack(pady=30)
                 return
             for item in items:
                 row = ctk.CTkFrame(body, fg_color=t.sidebar, corner_radius=15)
@@ -355,7 +372,7 @@ class WorkspacePanels:
                 if not item.done:
                     ctk.CTkButton(
                         row,
-                        text="Focus",
+                        text=self._t("task_focus"),
                         width=66,
                         height=30,
                         fg_color=t.glow,
@@ -378,7 +395,7 @@ class WorkspacePanels:
                 render()
 
         ctk.CTkButton(
-            composer, text="ADD", width=86, height=46,
+            composer, text=self._t("add"), width=86, height=46,
             font=ctk.CTkFont(family=self.font_bold, size=12),
             fg_color=t.accent, hover_color=t.accent_hover, command=add,
         ).pack(side="right", padx=(0, 14), pady=14)
@@ -402,7 +419,7 @@ class WorkspacePanels:
     def open_stats(self):
         t = self._theme()
         win = self._window("Aqua Focus · Abyss Stats", "780x620")
-        self._heading(win, "Abyss Stats", "A calm view of your focus history — no pressure, just context.")
+        self._heading(win, self._t("stats_title"), self._t("stats_subtitle"))
 
         cards = ctk.CTkFrame(win, fg_color="transparent")
         cards.pack(fill="x", padx=18, pady=(0, 14))
@@ -448,7 +465,7 @@ class WorkspacePanels:
         box = ctk.CTkScrollableFrame(win, fg_color="transparent", height=180)
         box.pack(fill="both", expand=True, padx=18, pady=(4, 18))
         if not recent:
-            ctk.CTkLabel(box, text="Complete a focus session to start building your history.", text_color=t.muted).pack(pady=20)
+            ctk.CTkLabel(box, text=self._t("stats_empty"), text_color=t.muted).pack(pady=20)
         for row in recent:
             label = row.get("task") or row.get("mode") or "Focus"
             when = row.get("at", "").replace("T", " ")[:16]
@@ -463,11 +480,11 @@ class WorkspacePanels:
     def open_soundscape(self):
         t = self._theme()
         win = self._window("Aqua Focus · Ocean Soundscape", "640x480")
-        self._heading(win, "Ocean Soundscape", "A second ambient layer that can sit quietly beneath your music.")
+        self._heading(win, self._t("soundscape_title"), self._t("soundscape_subtitle"))
 
         selected = tk.StringVar(value=self.ambient.kind)
         status = ctk.CTkLabel(
-            win, text="Stopped", text_color=t.text,
+            win, text=self._t("stopped"), text_color=t.text,
             font=ctk.CTkFont(family=self.font_bold, size=12),
         )
         status.pack(anchor="w", padx=26, pady=(0, 8))
@@ -480,7 +497,7 @@ class WorkspacePanels:
                 fg_color=t.accent, hover_color=t.accent_hover, text_color=t.text,
             ).pack(side="left", expand=True, padx=8)
 
-        ctk.CTkLabel(win, text="Ambient volume", text_color=t.muted).pack(anchor="w", padx=26, pady=(18, 4))
+        ctk.CTkLabel(win, text=self._t("ambient_volume"), text_color=t.muted).pack(anchor="w", padx=26, pady=(18, 4))
         slider = ctk.CTkSlider(win, from_=0, to=0.7, progress_color=t.accent)
         slider.set(0.20)
         slider.pack(fill="x", padx=26)
@@ -490,25 +507,25 @@ class WorkspacePanels:
             self.ambient.start(selected.get(), float(slider.get()))
         def stop():
             self.ambient.stop()
-            status.configure(text="Stopped")
+            status.configure(text=self._t("stopped"))
         slider.configure(command=lambda v: self.ambient.set_volume(float(v)))
 
         row = ctk.CTkFrame(win, fg_color="transparent")
         row.pack(fill="x", padx=24, pady=28)
-        ctk.CTkButton(row, text="PLAY AMBIENT", command=play, fg_color=t.accent, hover_color=t.accent_hover).pack(
+        ctk.CTkButton(row, text=self._t("ambient_play"), command=play, fg_color=t.accent, hover_color=t.accent_hover).pack(
             side="left", fill="x", expand=True, padx=(0,6)
         )
-        ctk.CTkButton(row, text="STOP", command=stop, fg_color=t.glow, hover_color=t.accent_hover).pack(
+        ctk.CTkButton(row, text=self._t("ambient_stop"), command=stop, fg_color=t.glow, hover_color=t.accent_hover).pack(
             side="left", fill="x", expand=True, padx=(6,0)
         )
 
     def open_extensions(self):
         t = self._theme()
-        win = self._window("Aqua Focus · Reef Extensions", "800x640")
-        self._heading(win, "Reef Extensions", "Install curated themes, sound profiles and focus presets from the Aqua catalog.")
+        win = self._window(f"Aqua Focus · {self._t('extensions_title')}", "800x640")
+        self._heading(win, self._t("extensions_title"), self._t("extensions_subtitle"))
 
         status = ctk.CTkLabel(
-            win, text="Loading catalog…", text_color=t.text,
+            win, text=self._t("extensions_loading"), text_color=t.text,
             font=ctk.CTkFont(family=self.font_bold, size=12),
         )
         status.pack(anchor="w", padx=26, pady=(0, 8))
@@ -524,12 +541,14 @@ class WorkspacePanels:
                 card.pack(fill="x", padx=5, pady=6)
                 left = ctk.CTkFrame(card, fg_color="transparent")
                 left.pack(side="left", fill="both", expand=True, padx=14, pady=12)
+                item_name = self._t(item.get("name_key")) if item.get("name_key") else item.get("name", self._t("extension"))
+                item_desc = self._t(item.get("desc_key")) if item.get("desc_key") else item.get("description", "")
                 ctk.CTkLabel(
-                    left, text=item.get("name","Extension"),
+                    left, text=item_name,
                     text_color=t.text, font=ctk.CTkFont(family=self.font_bold, size=15), anchor="w",
                 ).pack(fill="x")
                 ctk.CTkLabel(
-                    left, text=item.get("description",""),
+                    left, text=item_desc,
                     text_color=t.muted, wraplength=500, justify="left", anchor="w",
                 ).pack(fill="x", pady=(2,0))
                 ext_id = item.get("id")
@@ -545,7 +564,7 @@ class WorkspacePanels:
                     render(catalog)
                 ctk.CTkButton(
                     card,
-                    text="REMOVE" if installed else "INSTALL",
+                    text=self._t("remove") if installed else self._t("install"),
                     width=92,
                     height=34,
                     fg_color=t.glow if installed else t.accent,
@@ -560,12 +579,13 @@ class WorkspacePanels:
                     catalog = json.loads(resp.read().decode("utf-8"))
                 if not isinstance(catalog, list):
                     raise ValueError("invalid catalog")
-                self.root.after(0, lambda: (status.configure(text=f"{len(catalog)} extensions available"), render(catalog)))
+                catalog = list(self.BUILTIN_ANIMATIONS) + [x for x in catalog if x.get("id") not in {a["id"] for a in self.BUILTIN_ANIMATIONS}]
+                self.root.after(0, lambda: (status.configure(text=self._t("extensions_available", n=len(catalog))), render(catalog)))
             except Exception as exc:
-                fallback = [
+                fallback = list(self.BUILTIN_ANIMATIONS) + [
                     {"id":"theme-jellyfish","name":"Jellyfish Night","type":"theme","description":"A violet deep-sea visual preset."},
                     {"id":"preset-coding90","name":"Coding 90","type":"preset","description":"A 90/20 deep-work preset."},
                     {"id":"sound-rain","name":"Study Rain","type":"sound","description":"Rain-forward ambient profile."},
                 ]
-                self.root.after(0, lambda: (status.configure(text=f"Offline catalog · {exc}"), render(fallback)))
+                self.root.after(0, lambda: (status.configure(text=self._t("extensions_offline")), render(fallback)))
         threading.Thread(target=worker, daemon=True).start()

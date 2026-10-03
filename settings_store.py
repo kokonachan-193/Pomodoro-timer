@@ -15,6 +15,10 @@ class SettingsStore:
             "audio_output_name": "",  # empty = not chosen yet (force pick)
             "audio_output_index": None,
             "agiu_auto_check": True,
+            "custom_bg_path": "",
+            "background_dim": 0.30,
+            "home_scale": 1.0,
+            "focus_visual_strength": 1.0,
         }
         self.load()
 
