@@ -28,11 +28,11 @@ permissions:
   contents: write
 
 concurrency:
-  group: aqua-focus-v2.1.8
+  group: aqua-focus-v2.1.9
   cancel-in-progress: true
 
 env:
-  VERSION: "2.1.8"
+  VERSION: "2.1.9"
 
 jobs:
   windows:
@@ -113,14 +113,14 @@ jobs:
           merge-multiple: true
       - name: Show downloaded release assets
         run: find release-assets -type f -maxdepth 5 -print | sort
-      - name: Publish v2.1.8
+      - name: Publish v2.1.9
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v2.1.8
+          tag_name: v2.1.9
           target_commitish: main
-          name: Aqua Focus v2.1.8
+          name: Aqua Focus v2.1.9
           make_latest: true
-          body_path: docs/release/v2.1.8.md
+          body_path: docs/release/v2.1.9.md
           fail_on_unmatched_files: true
           files: |
             release-assets/**/AquaFocusSetup-${{ env.VERSION }}.exe
