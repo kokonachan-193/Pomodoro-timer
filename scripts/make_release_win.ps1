@@ -1,11 +1,11 @@
 # Build Windows release assets for GitHub Releases (download & run, no build needed)
 # Usage (repo root):  .\scripts\make_release_win.ps1
 # Outputs:
-#   dist\releases\AquaFocus-Windows-Portable-2.1.6.zip
-#   dist\releases\AquaFocusSetup-2.1.6.exe
+#   dist\releases\AquaFocus-Windows-Portable-$Version.zip
+#   dist\releases\AquaFocusSetup-$Version.exe
 
 $ErrorActionPreference = "Stop"
-$Version = if ($env:VERSION) { $env:VERSION } else { "2.1.6" }
+$Version = if ($env:VERSION) { $env:VERSION } else { "2.1.9" }
 
 if (-not $PSScriptRoot) { throw "Run as: .\scripts\make_release_win.ps1" }
 $Root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
@@ -36,15 +36,26 @@ $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 $setupOut = Join-Path $relDir "AquaFocusSetup-$Version.exe"
 if (Test-Path -LiteralPath $iscc) {
     Write-Host "==> Inno Setup installer" -ForegroundColor Cyan
-    & $iscc (Join-Path $Root "installer\aqua-focus.iss")
+    $iss = Join-Path $Root "installer\aqua-focus.iss"
+    & $iscc "/DMyAppVersion=$Version" $iss
     $built = Join-Path $Root "dist\installer\AquaFocusSetup-$Version.exe"
     if (Test-Path -LiteralPath $built) {
         Copy-Item $built $setupOut -Force
     } else {
-        Write-Host "WARN: Setup not found at $built" -ForegroundColor Yellow
+        $fallback = Get-ChildItem -Path (Join-Path $Root "dist\installer") -Filter "AquaFocusSetup-*.exe" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        if ($fallback) {
+            Write-Host "WARN: Expected setup not found at $built; renaming $($fallback.Name)" -ForegroundColor Yellow
+            Copy-Item $fallback.FullName $setupOut -Force
+        } else {
+            throw "Setup installer was not created: $built"
+        }
     }
 } else {
     Write-Host "WARN: Inno Setup not found - portable zip only" -ForegroundColor Yellow
+}
+
+if (-not (Test-Path -LiteralPath $setupOut)) {
+    throw "Missing release installer asset: $setupOut"
 }
 
 Write-Host ""
