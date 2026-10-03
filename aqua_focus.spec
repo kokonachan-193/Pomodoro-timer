@@ -22,6 +22,7 @@ a = Analysis(
         (str(root / 'i18n.py'), '.'),
         (str(root / 'sitecustomize.py'), '.'),
         (str(root / 'pc_runtime_fixes.py'), '.'),
+        (str(root / 'pc_water_fixes.py'), '.'),
     ] + ffmpeg_datas,
     hiddenimports=[
         'customtkinter',
@@ -37,6 +38,7 @@ a = Analysis(
         'agiu',
         'settings_store',
         'pc_runtime_fixes',
+        'pc_water_fixes',
     ],
     hookspath=[],
     hooksconfig={},
