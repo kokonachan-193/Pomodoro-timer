@@ -8,7 +8,7 @@
 
 #define MyAppName "Aqua Focus"
 #ifndef MyAppVersion
-#define MyAppVersion "2.1.9"
+#define MyAppVersion "2.1.10"
 #endif
 #define MyAppPublisher "Kokona"
 #define MyAppExeName "AquaFocus.exe"
