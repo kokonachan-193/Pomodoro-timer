@@ -1,6 +1,6 @@
 # Aqua Focus Android
 
-Android companion for Aqua Focus v2.1.8.
+Android companion for Aqua Focus v2.1.9.
 
 ## Focus visuals
 
@@ -43,7 +43,7 @@ The GitHub Actions workflow supports stable release signing through repository s
 - `ANDROID_KEY_ALIAS`
 - `ANDROID_KEY_PASSWORD`
 
-When those secrets are configured, the workflow builds a release APK, signs it with `apksigner`, verifies it, and uploads `AquaFocus-Android-2.1.8.certs.txt` with the certificate fingerprints.
+When those secrets are configured, the workflow builds a release APK, signs it with `apksigner`, verifies it, and uploads `AquaFocus-Android-2.1.9.certs.txt` with the certificate fingerprints.
 
 If the secrets are not configured, the workflow falls back to a debug APK so development builds still work.
 
@@ -58,4 +58,4 @@ buildozer android debug
 
 GitHub Actions produces:
 
-`AquaFocus-Android-2.1.8.apk`
+`AquaFocus-Android-2.1.9.apk`
