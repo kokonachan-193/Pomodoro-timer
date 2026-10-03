@@ -23,13 +23,14 @@
 
 No build required. Download the package for your platform from [**Aqua Focus v2.1.8**](https://github.com/kokonachan-193/Pomodoro-timer/releases/tag/v2.1.8).
 
-| Platform | Package | Run |
+| **File** | **Platform** | **How** |
 | :--- | :--- | :--- |
-| **Windows 10 / 11** | `AquaFocusSetup-2.1.8.exe` | Installer · recommended |
-| **Windows** | `AquaFocus-Windows-Portable-2.1.8.zip` | Unzip → `AquaFocus.exe` |
-| **macOS** | `AquaFocus-macOS-2.1.8.zip` | Unzip → `AquaFocus.app` |
-| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.1.8.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
-| **Android 8+** | `AquaFocus-Android-2.1.7.apk` | Install the APK |
+| **AquaFocusSetup-2.1.8.exe** | Windows 10 / 11 | Run the installer |
+| **AquaFocus-Windows-Portable-2.1.8.zip** | Windows 10 / 11 | Unzip → `AquaFocus.exe` |
+| **AquaFocus-macOS-2.1.8.zip** | macOS | Unzip → open `AquaFocus.app` |
+| **AquaFocus-Linux-Portable-2.1.8.tar.gz** | Linux | Extract → run `./AquaFocus/AquaFocus` |
+| **AquaFocus-Ubuntu-Portable-2.1.8.tar.gz** | Ubuntu | Same as Linux build |
+| **AquaFocus-Android-2.1.8.apk** | Android 8.0+ / arm64-v8a | Install the APK on your device |
 
 ffmpeg is **bundled** on desktop. Existing desktop installs can check GitHub Releases through **AGIU**.
 
@@ -39,19 +40,14 @@ Android release signing notes: [`docs/android-signing.md`](docs/android-signing.
 
 ## What’s new in 2.1.8
 
+- **All release targets covered** — Windows installer, Windows portable, macOS, Linux, Ubuntu and Android APK assets are built for the same v2.1.8 release.
 - **Desktop animation extensions now apply live** — installing or removing animation extensions in Extensions is reflected in the Focus canvas without restarting Focus.
 - **Extension state is reloaded while Focus is running** — `extensions.json` changes are detected during drawing, so installed/removed animation state no longer feels ignored.
 - **Removed animations stay removed** — built-in animation defaults are added only on first run and are no longer resurrected after the user removes them.
 - **GUI display stability fixes** — stale Tk/CTk widget calls after resize, theme rebuilds and Focus stop are guarded to reduce random display glitches.
 - **Responsive Focus clock fix** — the v3 Focus timer no longer snaps back to an oversized fixed font every tick.
+- **Android 2.1.8 release path** — Android build metadata, workflow artifact names and release attachment target now match v2.1.8.
 - **Source and packaged builds covered** — `sitecustomize.py` loads the runtime fixes for `python main.py`, and the PyInstaller runtime hook loads them in desktop packages.
-- **Build/release updated** — desktop GitHub Actions now publish v2.1.8 artifacts and include the runtime fix modules.
-
-### Carried forward from 2.1.7 Android
-
-- Android Japanese-capable font bundling and safer UI fallback.
-- Android responsive Focus layout and keyboard-focus stability.
-- Android wave geometry stabilization, Sakura petals and APK signing workflow.
 
 ---
 
