@@ -12,7 +12,7 @@
 <p align="center">
   <a href="README.ja.md">日本語</a>
   ·
-  <a href="https://github.com/kokonachan-193/Pomodoro-timer/releases/tag/v2.1.9"><strong>Aqua Focus v2.1.9</strong></a>
+  <a href="https://github.com/kokonachan-193/Pomodoro-timer/releases/tag/v2.1.10"><strong>Aqua Focus v2.1.10</strong></a>
   ·
   Windows · macOS · Ubuntu · Linux · Android
 </p>
@@ -21,16 +21,16 @@
 
 ## Get the app
 
-No build required. Download the package for your platform from [**Aqua Focus v2.1.9**](https://github.com/kokonachan-193/Pomodoro-timer/releases/tag/v2.1.9).
+No build required. Download the package for your platform from [**Aqua Focus v2.1.10**](https://github.com/kokonachan-193/Pomodoro-timer/releases/tag/v2.1.10).
 
 | **File** | **Platform** | **How** |
 | :--- | :--- | :--- |
-| **AquaFocusSetup-2.1.9.exe** | Windows 10 / 11 | Run the installer |
-| **AquaFocus-Windows-Portable-2.1.9.zip** | Windows 10 / 11 | Unzip → `AquaFocus.exe` |
-| **AquaFocus-macOS-2.1.9.zip** | macOS | Unzip → open `AquaFocus.app` |
-| **AquaFocus-Linux-Portable-2.1.9.tar.gz** | Linux | Extract → run `./AquaFocus/AquaFocus` |
-| **AquaFocus-Ubuntu-Portable-2.1.9.tar.gz** | Ubuntu | Same as Linux build |
-| **AquaFocus-Android-2.1.9.apk** | Android 8.0+ / arm64-v8a | Install the APK on your device |
+| **AquaFocusSetup-2.1.10.exe** | Windows 10 / 11 | Run the installer |
+| **AquaFocus-Windows-Portable-2.1.10.zip** | Windows 10 / 11 | Unzip → `AquaFocus.exe` |
+| **AquaFocus-macOS-2.1.10.zip** | macOS | Unzip → open `AquaFocus.app` |
+| **AquaFocus-Linux-Portable-2.1.10.tar.gz** | Linux | Extract → run `./AquaFocus/AquaFocus` |
+| **AquaFocus-Ubuntu-Portable-2.1.10.tar.gz** | Ubuntu | Same as Linux build |
+| **AquaFocus-Android-2.1.10.apk** | Android 8.0+ / arm64-v8a | Install the APK on your device |
 
 ffmpeg is **bundled** on desktop. Existing desktop installs can check GitHub Releases through **AGIU**.
 
@@ -38,15 +38,15 @@ Android release signing notes: [`docs/android-signing.md`](docs/android-signing.
 
 ---
 
-## What’s new in 2.1.9
+## What’s new in 2.1.10
 
-- **Release style aligned with v2.1.6** — all six assets are listed in the release body: Windows installer, Windows portable, macOS, Linux, Ubuntu and Android APK.
-- **More resilient modern GUI** — resize storms are debounced, stale Tk/CTk widget calls are guarded, and Focus/Home relayout is safer after stop, theme rebuilds or compact-window changes.
-- **Safer Focus drawing fallback** — animation errors now recover to a minimal Aqua frame instead of leaving the canvas blank or half-drawn.
-- **Live animation extension refresh** — extension install/remove still reloads from `extensions.json` during Focus and redraws without restarting the session.
-- **Responsive Focus chrome** — timer text, control placement and secondary Focus controls are re-applied after each update tick to avoid oversized or misplaced UI.
-- **AGIU current-version bump** — the desktop updater now treats v2.1.9 as the current app version.
-- **Android 2.1.9 release path** — Android build metadata, workflow artifact names and release attachment target now match v2.1.9.
+- **Visible Focus animation extensions** — Sakura, rain, snow, fireflies, fish, bubbles and particles now use a brighter, faster overlay so enabled FX are clearly visible on dark custom backgrounds.
+- **Stronger live extension refresh** — Focus reloads `extensions.json` while running and performs several redraws after extension changes so toggles no longer feel ignored.
+- **Reduce Motion still shows state** — motion is calmer, but enabled animation effects remain visibly present instead of disappearing completely.
+- **Top-level FX layer** — extension animations are drawn as a dedicated Focus overlay while the calm Aqua base scene remains intact.
+- **Windows installer version fix carried forward** — Inno Setup receives the workflow `VERSION`, so `AquaFocusSetup-2.1.10.exe` is generated correctly.
+- **AGIU current-version bump** — the desktop updater now treats v2.1.10 as the current app version.
+- **Android 2.1.10 release path** — Android build metadata, workflow artifact names and release attachment target now match v2.1.10.
 
 ---
 
