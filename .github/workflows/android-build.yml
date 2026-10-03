@@ -32,6 +32,9 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Python syntax check
+        run: python -m py_compile android/main.py
+
       - name: Install Android build dependencies
         run: |
           sudo apt-get update
