@@ -28,6 +28,8 @@ Thumbs.db
 .env.*
 *.pem
 *.key
+*.jks
+*.keystore
 
 .venv-wsl/
 AquaFocus.spec
