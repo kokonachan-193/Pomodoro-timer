@@ -11,7 +11,9 @@ fullscreen = 0
 android.api = 35
 android.minapi = 26
 android.ndk = 27c
-android.archs = arm64-v8a, armeabi-v7a
+# Build modern Android only. The previous armeabi-v7a target failed while
+# cross-linking OpenSSL, and Android 8+ devices are overwhelmingly arm64.
+android.archs = arm64-v8a
 android.permissions = INTERNET,WAKE_LOCK,POST_NOTIFICATIONS,FOREGROUND_SERVICE
 android.accept_sdk_license = True
 android.private_storage = True
