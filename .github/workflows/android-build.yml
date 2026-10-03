@@ -12,14 +12,14 @@ permissions:
   contents: write
 
 env:
-  APP_VERSION: "2.1.7"
+  APP_VERSION: "2.1.8"
   ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
   ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
   ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
   ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
 concurrency:
-  group: aqua-focus-android-2.1.7
+  group: aqua-focus-android-2.1.8
   cancel-in-progress: true
 
 jobs:
@@ -112,12 +112,12 @@ jobs:
             dist/android/AquaFocus-Android-${{ env.APP_VERSION }}.certs.txt
           if-no-files-found: error
 
-      - name: Attach APK to v2.1.7 release
+      - name: Attach APK to v2.1.8 release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v2.1.7
+          tag_name: v2.1.8
           target_commitish: main
-          name: Aqua Focus v2.1.7
+          name: Aqua Focus v2.1.8
           make_latest: true
           fail_on_unmatched_files: true
           files: |
