@@ -23,13 +23,14 @@
 
 GitHub Release の [**Aqua Focus v2.1.8**](https://github.com/kokonachan-193/Pomodoro-timer/releases/tag/v2.1.8) から使用するOS向けのパッケージを取得できます。
 
-| プラットフォーム | パッケージ | 使い方 |
+| **ファイル / File** | **対象 / Platform** | **使い方 / How** |
 | :--- | :--- | :--- |
-| **Windows 10 / 11** | `AquaFocusSetup-2.1.8.exe` | インストーラ · おすすめ |
-| **Windows** | `AquaFocus-Windows-Portable-2.1.8.zip` | 解凍 → `AquaFocus.exe` |
-| **macOS** | `AquaFocus-macOS-2.1.8.zip` | 解凍 → `AquaFocus.app` |
-| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.1.8.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
-| **Android 8+** | `AquaFocus-Android-2.1.7.apk` | APKをインストール |
+| **AquaFocusSetup-2.1.8.exe** | Windows 10 / 11 | インストーラを実行 / Run the installer |
+| **AquaFocus-Windows-Portable-2.1.8.zip** | Windows 10 / 11 | 解凍 → `AquaFocus.exe` / Unzip → `AquaFocus.exe` |
+| **AquaFocus-macOS-2.1.8.zip** | macOS | 解凍 → `AquaFocus.app` / Unzip → open `AquaFocus.app` |
+| **AquaFocus-Linux-Portable-2.1.8.tar.gz** | Linux | 解凍 → `./AquaFocus/AquaFocus` / Extract → run `./AquaFocus/AquaFocus` |
+| **AquaFocus-Ubuntu-Portable-2.1.8.tar.gz** | Ubuntu | Linux版と同じ / Same as Linux build |
+| **AquaFocus-Android-2.1.8.apk** | Android 8.0+ / arm64-v8a | APKを端末へインストール / Install the APK on your device |
 
 デスクトップ版は ffmpeg **同梱**。既存版は **AGIU** からGitHub Releasesの更新を確認できます。
 
@@ -39,19 +40,13 @@ Android署名メモ: [`docs/android-signing.md`](docs/android-signing.md)
 
 ## v2.1.8 の新機能
 
+- **全配布対象をv2.1.8で統一** — Windowsインストーラ、Windowsポータブル、macOS、Linux、Ubuntu、Android APKを同じv2.1.8 Releaseへ揃えます。
 - **PC版のアニメーション拡張をFocus中に即時反映** — Extensionsでアニメーションをインストール/削除した時、Focus画面を再起動しなくても描画へ反映します。
 - **拡張状態をFocus中にも再読込** — `extensions.json` の更新を描画中に検知し、インストール/削除状態が無視される問題を軽減しました。
 - **削除したアニメーションを勝手に復活させない** — 組み込みアニメーションは初回起動時だけ登録し、その後のユーザー操作を尊重します。
 - **GUI表示バグ対策** — リサイズ・テーマ再構築・Focus停止時に古いTk/CTk widget参照を触って表示が崩れるケースをガードしました。
 - **Focus時計の固定サイズ戻り対策** — v3 Focus画面で毎tick巨大フォントへ戻る挙動を抑え、画面サイズに応じた表示を維持します。
-- **通常起動/配布版の両対応** — `sitecustomize.py` は `python main.py` 用、`pyinstaller_runtime_hook.py` は配布ビルド用に同じ修正を読み込みます。
-- **ビルド/Releaseをv2.1.8へ更新** — デスクトップGitHub Actionsの配布物名とRelease先をv2.1.8へ揃えました。
-
-### v2.1.7 Androidから継続
-
-- Android日本語フォント同梱と文字化け回避。
-- AndroidレスポンシブFocus UIと入力欄フォーカス崩れ対策。
-- Android波演出の安定化、桜演出、APK署名ワークフロー。
+- **Android 2.1.8配布対応** — AndroidのBuildozer版数、GitHub Actionsの成果物名、Release添付先をv2.1.8へ統一しました。
 
 ---
 
