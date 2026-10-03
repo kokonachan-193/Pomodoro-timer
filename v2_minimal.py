@@ -678,31 +678,113 @@ class MinimalShell:
         # Aqua progress: during Work, a restrained waterline rises with elapsed
         # focus time. It sits behind the timer and is disabled by Reduce Motion.
         # On breaks the surface relaxes back down so the metaphor stays readable.
+        # Water is a translucent body, not a rising frame. Multiple blended
+        # layers create a glassy depth while the top edge remains a living wave.
         if a.workspace.extension_enabled("animation-rising-water"):
             if a.mode == "Work":
                 level_progress = progress
             else:
-                level_progress = max(0.0, 0.18 - progress * 0.18)
-            water_y = h * (0.94 - 0.54 * level_progress)
-            wave_amp = 0.0 if a.reduce_motion else max(2.0, h * 0.006 * strength)
-            wave_points = [(0, h)]
-            segments = 24
-            for i in range(segments + 1):
-                x = w * i / segments
-                phase = self._focus_phase * 3.2 + i * 0.72
-                y = water_y + math.sin(phase) * wave_amp
-                wave_points.append((x, y))
-            wave_points.append((w, h))
-            fill = self._blend(t.bg, t.accent if a.mode == "Work" else t.wave_front_break, min(0.22, 0.10 * strength))
-            edge = self._blend(t.bg, t.accent if a.mode == "Work" else t.wave_front_break, min(0.62, 0.34 * strength))
-            c.create_polygon(*[coord for point in wave_points for coord in point], fill=fill, outline="")
-            line_points = []
-            for i in range(segments + 1):
-                x = w * i / segments
-                phase = self._focus_phase * 3.2 + i * 0.72
-                y = water_y + math.sin(phase) * wave_amp
-                line_points.extend((x, y))
-            c.create_line(*line_points, fill=edge, width=max(1, int(2 * strength)), smooth=True)
+                level_progress = max(0.0, 0.16 - progress * 0.16)
+
+            water_y = h * (0.95 - 0.58 * level_progress)
+            wave_amp = 0.0 if a.reduce_motion else max(3.0, h * 0.008 * strength)
+            segments = 42
+
+            def surface_points(offset=0.0, amp=1.0, phase_shift=0.0):
+                pts = []
+                for i in range(segments + 1):
+                    x = w * i / segments
+                    phase = self._focus_phase * 3.1 + i * 0.48 + phase_shift
+                    y = water_y + offset + math.sin(phase) * wave_amp * amp
+                    pts.append((x, y))
+                return pts
+
+            main_surface = surface_points()
+            back_surface = surface_points(offset=9 * strength, amp=0.68, phase_shift=1.35)
+
+            # Back layer.
+            back_poly = [(0, h)] + back_surface + [(w, h)]
+            c.create_polygon(
+                *[v for p in back_poly for v in p],
+                fill=self._blend(t.bg, t.accent, min(0.28, 0.12 * strength)),
+                outline=""
+            )
+            # Main translucent-like layer. Tk has no alpha, so blend with the
+            # current background to simulate translucency without a boxed edge.
+            main_poly = [(0, h)] + main_surface + [(w, h)]
+            c.create_polygon(
+                *[v for p in main_poly for v in p],
+                fill=self._blend(t.bg, t.accent, min(0.40, 0.19 * strength)),
+                outline=""
+            )
+
+            # A soft vertical depth gradient inside the water body.
+            depth = max(1, int(h - water_y))
+            bands = 7
+            for band in range(bands):
+                y0 = water_y + depth * band / bands
+                y1 = water_y + depth * (band + 1) / bands + 1
+                amount = min(0.46, (0.10 + 0.035 * band) * strength)
+                c.create_rectangle(
+                    0, y0, w, y1,
+                    fill=self._blend(t.bg, t.accent, amount),
+                    outline=""
+                )
+
+            # Repaint the animated water surface after gradient bands.
+            crest = []
+            for x, y in main_surface:
+                crest.extend((x, y))
+            c.create_line(
+                *crest,
+                fill=self._blend(t.bg, t.accent, min(0.82, 0.54 * strength)),
+                width=max(2, int(3 * strength)),
+                smooth=True
+            )
+            crest2 = []
+            for x, y in back_surface:
+                crest2.extend((x, y))
+            c.create_line(
+                *crest2,
+                fill=self._blend(t.bg, t.glow, min(0.62, 0.28 * strength)),
+                width=max(1, int(2 * strength)),
+                smooth=True
+            )
+
+            if not a.reduce_motion and a.workspace.extension_enabled("animation-caustics"):
+                for j in range(5):
+                    y = water_y + 28 + j * max(18, depth / 7)
+                    pts = []
+                    for i in range(15):
+                        x = w * i / 14
+                        yy = y + math.sin(self._focus_phase * 2.0 + i * 0.8 + j) * (4 + j)
+                        pts.extend((x, yy))
+                    c.create_line(
+                        *pts,
+                        fill=self._blend(t.bg, t.accent, 0.24),
+                        width=1,
+                        smooth=True
+                    )
+
+            if not a.reduce_motion and a.workspace.extension_enabled("animation-bubbles"):
+                for i in range(max(6, int(14 * strength))):
+                    x = ((i * 113) % max(1, int(w))) + math.sin(self._focus_phase + i) * 14
+                    travel = (self._focus_phase * (42 + i * 2) + i * 71) % max(1, depth + 70)
+                    y = h - travel
+                    if y < water_y + 8:
+                        continue
+                    r = 1.5 + (i % 4) * 0.7
+                    edge = self._blend(t.bg, t.text, 0.34)
+                    c.create_oval(x-r, y-r, x+r, y+r, outline=edge, width=1)
+
+            if not a.reduce_motion and a.workspace.extension_enabled("animation-bioluminescence"):
+                for i in range(max(4, int(9 * strength))):
+                    x = ((i * 173 + 57) % max(1, int(w))) + math.sin(self._focus_phase * 0.8 + i) * 22
+                    y = water_y + 35 + ((i * 89 + self._focus_phase * (16 + i)) % max(1, depth - 30))
+                    r = 1 + (i % 3)
+                    glow = self._blend(t.bg, t.particle, 0.70)
+                    c.create_oval(x-r*2, y-r*2, x+r*2, y+r*2, fill=self._blend(t.bg, glow, 0.30), outline="")
+                    c.create_oval(x-r, y-r, x+r, y+r, fill=glow, outline="")
 
         cx, cy = w / 2, h * 0.40
         radius = min(w, h) * (0.17 if scale < 0.78 else 0.185)

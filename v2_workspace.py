@@ -242,6 +242,9 @@ class WorkspacePanels:
         {"id":"animation-rising-water","name_key":"ext_anim_water","desc_key":"ext_anim_water_desc","type":"animation","builtin":True},
         {"id":"animation-light-shafts","name_key":"ext_anim_light","desc_key":"ext_anim_light_desc","type":"animation","builtin":True},
         {"id":"animation-depth-particles","name_key":"ext_anim_particles","desc_key":"ext_anim_particles_desc","type":"animation","builtin":True},
+        {"id":"animation-bubbles","name_key":"ext_anim_bubbles","desc_key":"ext_anim_bubbles_desc","type":"animation","builtin":True},
+        {"id":"animation-caustics","name_key":"ext_anim_caustics","desc_key":"ext_anim_caustics_desc","type":"animation","builtin":True},
+        {"id":"animation-bioluminescence","name_key":"ext_anim_bioluminescence","desc_key":"ext_anim_bioluminescence_desc","type":"animation","builtin":True},
     ]
 
     def __init__(
