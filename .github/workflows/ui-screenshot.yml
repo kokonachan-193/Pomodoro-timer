@@ -6,6 +6,10 @@ on:
     paths:
       - "main.py"
       - "v2_minimal.py"
+      - "v2_experience.py"
+      - "v2_workspace.py"
+      - "i18n.py"
+      - "settings_store.py"
       - "scripts/ui_smoke.py"
       - ".github/workflows/ui-screenshot.yml"
   workflow_dispatch:

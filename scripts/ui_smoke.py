@@ -9,6 +9,9 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 import tkinter as tk
+import tempfile
+
+from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -77,25 +80,34 @@ def main() -> int:
     assert shell.surface.winfo_ismapped(), "clean Home did not restore"
     print("[smoke] OK: Full controls round-trip")
 
-    # Focus start / pause / resume / stop, including water-progress renderer.
-    shell.intent_entry.delete(0, tk.END)
-    shell.intent_entry.insert(0, "Release smoke test")
-    shell.start_focus()
-    app.update()
-    assert app.wave_frame.winfo_ismapped(), "Focus screen did not open"
-    assert app.is_running, "timer did not start"
-    app.remaining_seconds = max(1.0, app.total_seconds * 0.58)
-    app.draw_waves(frozen=True)
-    app.toggle_pause()
-    app.update()
-    assert app.is_paused, "pause failed"
-    app.toggle_pause()
-    app.update()
-    assert not app.is_paused, "resume failed"
-    app.stop_timer()
-    app.update()
-    assert app.main_container.winfo_ismapped(), "Home did not return after stop"
-    print("[smoke] OK: Focus lifecycle + water progress")
+    # Focus-time background must render from the selected/custom image.
+    with tempfile.TemporaryDirectory() as tmp:
+        bg_path = Path(tmp) / "focus-bg.png"
+        Image.new("RGB", (320, 200), (24, 52, 78)).save(bg_path)
+        app._custom_bg_path = str(bg_path)
+        app._set_background_image(str(bg_path), label="focus-bg.png")
+        assert app._bg_src is not None, "custom focus background failed to load"
+
+        # Focus start / pause / resume / stop, including background + water renderer.
+        shell.intent_entry.delete(0, tk.END)
+        shell.intent_entry.insert(0, "Release smoke test")
+        shell.start_focus()
+        app.update()
+        assert app.wave_frame.winfo_ismapped(), "Focus screen did not open"
+        assert app.is_running, "timer did not start"
+        app.remaining_seconds = max(1.0, app.total_seconds * 0.58)
+        app.draw_waves(frozen=True)
+        assert app._bg_photo is not None, "Focus background was not rendered"
+        app.toggle_pause()
+        app.update()
+        assert app.is_paused, "pause failed"
+        app.toggle_pause()
+        app.update()
+        assert not app.is_paused, "resume failed"
+        app.stop_timer()
+        app.update()
+        assert app.main_container.winfo_ismapped(), "Home did not return after stop"
+        print("[smoke] OK: Focus lifecycle + background + water progress")
 
     app.destroy()
     print("[smoke] PASS")
