@@ -1,0 +1,40 @@
+name: animation-pack-patch
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/apply_animation_pack.py"
+      - ".github/workflows/animation-pack-patch.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: aqua-focus-animation-pack-patch
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Apply Focus scene animation pack
+        run: python scripts/apply_animation_pack.py
+      - name: Validate patched Python files
+        run: python -m py_compile main.py i18n.py agiu.py settings_store.py v2_experience.py v2_workspace.py v2_minimal.py scripts/apply_animation_pack.py
+      - name: Commit generated animation pack changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add v2_minimal.py v2_workspace.py i18n.py docs/release/v2.1.6.md
+          if ! git diff --cached --quiet; then
+            git commit -m "Add lightweight Focus scene animation extensions"
+            git push
+          fi
