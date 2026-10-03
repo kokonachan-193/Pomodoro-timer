@@ -7,7 +7,9 @@
 ; App UI language (JA/EN) is chosen inside Aqua Focus, not only by this wizard.
 
 #define MyAppName "Aqua Focus"
-#define MyAppVersion "2.1.6"
+#ifndef MyAppVersion
+#define MyAppVersion "2.1.9"
+#endif
 #define MyAppPublisher "Kokona"
 #define MyAppExeName "AquaFocus.exe"
 
