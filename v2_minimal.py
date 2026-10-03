@@ -692,17 +692,21 @@ class MinimalShell:
             wave_amp = 0.0 if a.reduce_motion else max(3.0, h * 0.008 * strength)
             segments = 42
 
-            def surface_points(offset=0.0, amp=1.0, phase_shift=0.0):
-                pts = []
-                for i in range(segments + 1):
-                    x = w * i / segments
-                    phase = self._focus_phase * 3.1 + i * 0.48 + phase_shift
-                    y = water_y + offset + math.sin(phase) * wave_amp * amp
-                    pts.append((x, y))
-                return pts
-
-            main_surface = surface_points()
-            back_surface = surface_points(offset=9 * strength, amp=0.68, phase_shift=1.35)
+            # Use one base wave for both layers so the rear crest can never
+            # cross the front crest or form broken spikes as phases drift.
+            main_surface = []
+            back_surface = []
+            back_gap = max(6.0, 9.0 * strength)
+            for i in range(segments + 1):
+                x = w * i / segments
+                nx = i / segments
+                phase = self._focus_phase * 2.55 + nx * math.tau * 2.65
+                primary = math.sin(phase) * wave_amp
+                secondary = math.sin(phase * 0.52 + 0.9) * wave_amp * 0.22
+                y = water_y + primary + secondary
+                main_surface.append((x, y))
+                rear_ripple = math.sin(phase + 0.8) * wave_amp * 0.16
+                back_surface.append((x, y + back_gap + rear_ripple))
 
             # True RGBA water overlay: the selected Focus background remains
             # visible through the water instead of being replaced by a solid box.
@@ -736,7 +740,7 @@ class MinimalShell:
                 *crest,
                 fill=self._blend(t.bg, t.accent, min(0.82, 0.54 * strength)),
                 width=max(2, int(3 * strength)),
-                smooth=True
+                smooth=False
             )
             crest2 = []
             for x, y in back_surface:
@@ -745,7 +749,7 @@ class MinimalShell:
                 *crest2,
                 fill=self._blend(t.bg, t.glow, min(0.62, 0.28 * strength)),
                 width=max(1, int(2 * strength)),
-                smooth=True
+                smooth=False
             )
 
             if not a.reduce_motion and a.workspace.extension_enabled("animation-caustics"):
