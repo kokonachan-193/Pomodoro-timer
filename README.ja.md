@@ -6,13 +6,13 @@
 
 <p align="center">
   <strong>Descend into focus.</strong><br />
-  海底へ潜るように集中するワークスペース — タイマー・音楽・タスク・環境音・統計・拡張機能。
+  シンプルでモダンなポモドーロ集中ワークスペース — 集中・さりげない演出・音楽・タスク・統計・拡張機能。
 </p>
 
 <p align="center">
   <a href="README.md">English</a>
   ·
-  <b>v2.1.7</b>
+  <a href="https://github.com/kokonachan-193/Pomodoro-timer/releases/tag/v2.1.8"><strong>Aqua Focus v2.1.8</strong></a>
   ·
   Windows · macOS · Ubuntu · Linux · Android
 </p>
@@ -21,14 +21,14 @@
 
 ## ダウンロードして使う
 
-GitHub Release から使用するOS向けのパッケージを取得できます。
+GitHub Release の [**Aqua Focus v2.1.8**](https://github.com/kokonachan-193/Pomodoro-timer/releases/tag/v2.1.8) から使用するOS向けのパッケージを取得できます。
 
 | プラットフォーム | パッケージ | 使い方 |
 | :--- | :--- | :--- |
-| **Windows 10 / 11** | `AquaFocusSetup-2.1.7.exe` | インストーラ · おすすめ |
-| **Windows** | `AquaFocus-Windows-Portable-2.1.7.zip` | 解凍 → `AquaFocus.exe` |
-| **macOS** | `AquaFocus-macOS-2.1.7.zip` | 解凍 → `AquaFocus.app` |
-| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.1.7.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
+| **Windows 10 / 11** | `AquaFocusSetup-2.1.8.exe` | インストーラ · おすすめ |
+| **Windows** | `AquaFocus-Windows-Portable-2.1.8.zip` | 解凍 → `AquaFocus.exe` |
+| **macOS** | `AquaFocus-macOS-2.1.8.zip` | 解凍 → `AquaFocus.app` |
+| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.1.8.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
 | **Android 8+** | `AquaFocus-Android-2.1.7.apk` | APKをインストール |
 
 デスクトップ版は ffmpeg **同梱**。既存版は **AGIU** からGitHub Releasesの更新を確認できます。
@@ -37,24 +37,21 @@ Android署名メモ: [`docs/android-signing.md`](docs/android-signing.md)
 
 ---
 
-## v2.1.7 の新機能
+## v2.1.8 の新機能
 
-- **Android日本語文字化け修正** — Androidビルドで Noto 日本語対応フォントを同梱し、端末フォントより先に登録します。
-- **未対応端末の安全フォールバック** — 日本語対応フォントを読み込めない場合、豆腐表示や文字化けを避けるためAndroid版は英語UIで起動します。
-- **AndroidレスポンシブUI** — スマホ画面サイズに合わせて余白、時計サイズ、ボタン高、Focus描画領域を可変化しました。
-- **入力欄フォーカス崩れ対策** — Androidでは `Window.softinput_mode = "pan"` を使い、キーボード表示時に画面が壊れにくいようにしました。
-- **Focus演出の波を安定化** — 水面・波メッシュを画面内に制限し、端や上下で波が破綻しないようにしました。
-- **桜の花びら + Reduce Motion** — 軽量な桜演出を追加し、動きが強い場合はReduce Motionで抑えられます。
-- **APK署名ワークフロー** — GitHub Secretsが設定されている場合、Actionsでrelease APKを署名し、証明書フィンガープリントを添付します。
-- **署名情報表示** — Androidアプリ下部にAPK署名証明書のSHA-256短縮表示を追加しました。
+- **PC版のアニメーション拡張をFocus中に即時反映** — Extensionsでアニメーションをインストール/削除した時、Focus画面を再起動しなくても描画へ反映します。
+- **拡張状態をFocus中にも再読込** — `extensions.json` の更新を描画中に検知し、インストール/削除状態が無視される問題を軽減しました。
+- **削除したアニメーションを勝手に復活させない** — 組み込みアニメーションは初回起動時だけ登録し、その後のユーザー操作を尊重します。
+- **GUI表示バグ対策** — リサイズ・テーマ再構築・Focus停止時に古いTk/CTk widget参照を触って表示が崩れるケースをガードしました。
+- **Focus時計の固定サイズ戻り対策** — v3 Focus画面で毎tick巨大フォントへ戻る挙動を抑え、画面サイズに応じた表示を維持します。
+- **通常起動/配布版の両対応** — `sitecustomize.py` は `python main.py` 用、`pyinstaller_runtime_hook.py` は配布ビルド用に同じ修正を読み込みます。
+- **ビルド/Releaseをv2.1.8へ更新** — デスクトップGitHub Actionsの配布物名とRelease先をv2.1.8へ揃えました。
 
-### v2.1.4 / v2.1.6 から継続
+### v2.1.7 Androidから継続
 
-- **レスポンシブ化** — 小さい画面では重いサイドバーを「破壊せず隠す」、大画面・ウルトラワイドではカードを横に伸ばしすぎない構成。
-- **機能は削除しない** — Quick Dive、時間設定、目的、音楽、プレイリスト、音量、Tasks、Stats、環境音、拡張、Focus Lock、更新、テーマ、背景設定を維持。
-- **••• に整理** — 低頻度・高度な設定だけをコンパクトなメニューへ移し、ホームの情報量を減らしつつ到達性は維持。
-- **集中中の曲操作を復元** — フォーカス画面から曲追加・前後移動・スキップなどへ入れるメニューを常時アクセス可能にしました。
-- **水位上昇アニメーション** — 集中の経過に合わせて水面がゆっくり上がる演出を追加。Reduce Motion時は揺れを止めます。
+- Android日本語フォント同梱と文字化け回避。
+- AndroidレスポンシブFocus UIと入力欄フォーカス崩れ対策。
+- Android波演出の安定化、桜演出、APK署名ワークフロー。
 
 ---
 
@@ -106,5 +103,5 @@ buildozer android debug
 ---
 
 <p align="center">
-  <sub>Aqua Focus · ここな · Deep Sea focus workspace</sub>
+  <sub>Aqua Focus · ここな · Modern Pomodoro focus workspace</sub>
 </p>
