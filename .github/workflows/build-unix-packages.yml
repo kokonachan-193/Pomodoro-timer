@@ -111,6 +111,8 @@ jobs:
           pattern: release-*
           path: release-assets
           merge-multiple: true
+      - name: Show downloaded release assets
+        run: find release-assets -type f -maxdepth 5 -print | sort
       - name: Publish v2.1.8
         uses: softprops/action-gh-release@v2
         with:
@@ -121,8 +123,8 @@ jobs:
           body_path: docs/release/v2.1.8.md
           fail_on_unmatched_files: true
           files: |
-            release-assets/AquaFocusSetup-${{ env.VERSION }}.exe
-            release-assets/AquaFocus-Windows-Portable-${{ env.VERSION }}.zip
-            release-assets/AquaFocus-macOS-${{ env.VERSION }}.zip
-            release-assets/AquaFocus-Linux-Portable-${{ env.VERSION }}.tar.gz
-            release-assets/AquaFocus-Ubuntu-Portable-${{ env.VERSION }}.tar.gz
+            release-assets/**/AquaFocusSetup-${{ env.VERSION }}.exe
+            release-assets/**/AquaFocus-Windows-Portable-${{ env.VERSION }}.zip
+            release-assets/**/AquaFocus-macOS-${{ env.VERSION }}.zip
+            release-assets/**/AquaFocus-Linux-Portable-${{ env.VERSION }}.tar.gz
+            release-assets/**/AquaFocus-Ubuntu-Portable-${{ env.VERSION }}.tar.gz
