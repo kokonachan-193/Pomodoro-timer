@@ -719,11 +719,12 @@ class MinimalShell:
             )
 
             # A soft vertical depth gradient inside the water body.
-            depth = max(1, int(h - water_y))
+            gradient_top = water_y + max(8.0, wave_amp * 1.7)
+            depth = max(1, int(h - gradient_top))
             bands = 7
             for band in range(bands):
-                y0 = water_y + depth * band / bands
-                y1 = water_y + depth * (band + 1) / bands + 1
+                y0 = gradient_top + depth * band / bands
+                y1 = gradient_top + depth * (band + 1) / bands + 1
                 amount = min(0.46, (0.10 + 0.035 * band) * strength)
                 c.create_rectangle(
                     0, y0, w, y1,
