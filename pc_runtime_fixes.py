@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import json
 import time
-import types
 from pathlib import Path
 
 _PATCHED = False
@@ -31,6 +30,20 @@ def _widget_alive(widget) -> bool:
         return bool(widget.winfo_exists())
     except Exception:
         return False
+
+
+def _call_on_ui(root, callback) -> None:
+    """Run a small UI callback without assuming the Tk object is still alive."""
+    if _widget_alive(root):
+        try:
+            root.after(0, callback)
+            return
+        except Exception:
+            pass
+    try:
+        callback()
+    except Exception:
+        pass
 
 
 def _install_workspace_patch() -> None:
@@ -140,6 +153,10 @@ def _install_workspace_patch() -> None:
 
         def redraw():
             try:
+                _reload_extensions_if_needed(self, force=True)
+            except Exception:
+                pass
+            try:
                 # Visible Focus canvas: redraw immediately so install/remove is
                 # not delayed until the next timer tick or restart.
                 wave_frame = getattr(root, "wave_frame", None)
@@ -149,6 +166,10 @@ def _install_workspace_patch() -> None:
                         root._place_secondary_chrome()
                     except Exception:
                         pass
+                else:
+                    shell = getattr(root, "minimal_shell", None)
+                    if shell is not None and callable(getattr(shell, "draw_focus_canvas", None)):
+                        shell.draw_focus_canvas(frozen=bool(getattr(root, "is_paused", False)))
                 # Home background can also depend on visual settings.
                 shell = getattr(root, "minimal_shell", None)
                 if shell is not None:
@@ -160,10 +181,7 @@ def _install_workspace_patch() -> None:
             except Exception:
                 pass
 
-        try:
-            root.after(0, redraw)
-        except Exception:
-            redraw()
+        _call_on_ui(root, redraw)
 
     def __init__(self, root, *, data_dir: Path, theme_getter, font_family: str, font_bold: str):
         self.root = root
@@ -207,6 +225,32 @@ def _install_minimal_patch() -> None:
         app = getattr(shell, "app", None)
         if app is None or getattr(app, "_pc_runtime_fixed", False):
             return
+
+        original_draw_waves = getattr(app, "draw_waves", None)
+        if callable(original_draw_waves):
+            def draw_waves_wrapper(*args, **kwargs):
+                try:
+                    workspace = getattr(app, "workspace", None)
+                    if workspace is not None and hasattr(workspace, "reload_extensions_if_needed"):
+                        workspace.reload_extensions_if_needed()
+                except Exception:
+                    pass
+                try:
+                    return original_draw_waves(*args, **kwargs)
+                except Exception:
+                    # A drawing failure should not break the timer or leave a
+                    # half-drawn canvas. The next tick/resize can redraw again.
+                    try:
+                        c = getattr(app, "canvas", None)
+                        if c is not None:
+                            c.delete("all")
+                            w, h = max(1, c.winfo_width()), max(1, c.winfo_height())
+                            t = app.theme
+                            c.create_rectangle(0, 0, w, h, fill=t.bg, outline="")
+                    except Exception:
+                        pass
+                    return None
+            app.draw_waves = draw_waves_wrapper
 
         original_update_loop = getattr(app, "update_loop", None)
         if callable(original_update_loop):
