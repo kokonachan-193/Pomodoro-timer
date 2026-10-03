@@ -9,6 +9,9 @@ on:
       - "v2_experience.py"
       - "v2_workspace.py"
       - "v2_minimal.py"
+      - "pc_runtime_fixes.py"
+      - "sitecustomize.py"
+      - "pyinstaller_runtime_hook.py"
       - "extensions/**"
       - "docs/release/**"
       - "i18n.py"
@@ -25,11 +28,11 @@ permissions:
   contents: write
 
 concurrency:
-  group: aqua-focus-v2.1.6
+  group: aqua-focus-v2.1.8
   cancel-in-progress: true
 
 env:
-  VERSION: "2.1.6"
+  VERSION: "2.1.8"
 
 jobs:
   windows:
@@ -40,19 +43,21 @@ jobs:
         with:
           python-version: "3.12"
       - name: Python syntax check
-        run: python -m py_compile main.py i18n.py agiu.py settings_store.py v2_experience.py v2_workspace.py v2_minimal.py
+        run: python -m py_compile main.py i18n.py agiu.py settings_store.py v2_experience.py v2_workspace.py v2_minimal.py pc_runtime_fixes.py sitecustomize.py pyinstaller_runtime_hook.py
       - name: Install Inno Setup
         shell: powershell
         run: choco install innosetup -y --no-progress
       - name: Build Windows
         shell: powershell
+        env:
+          VERSION: ${{ env.VERSION }}
         run: .\scripts\make_release_win.ps1
       - uses: actions/upload-artifact@v4
         with:
           name: release-windows
           path: |
-            dist/releases/AquaFocusSetup-2.1.6.exe
-            dist/releases/AquaFocus-Windows-Portable-2.1.6.zip
+            dist/releases/AquaFocusSetup-${{ env.VERSION }}.exe
+            dist/releases/AquaFocus-Windows-Portable-${{ env.VERSION }}.zip
           if-no-files-found: error
 
   linux:
@@ -63,7 +68,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Python syntax check
-        run: python -m py_compile main.py i18n.py agiu.py settings_store.py v2_experience.py v2_workspace.py v2_minimal.py
+        run: python -m py_compile main.py i18n.py agiu.py settings_store.py v2_experience.py v2_workspace.py v2_minimal.py pc_runtime_fixes.py sitecustomize.py pyinstaller_runtime_hook.py
       - run: sudo apt-get update && sudo apt-get install -y python3-tk libportaudio2 portaudio19-dev
       - name: Build Linux / Ubuntu
         run: |
@@ -73,7 +78,8 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: release-linux
-          path: dist/releases/AquaFocus-*-Portable-2.1.6.tar.gz
+          path: dist/releases/AquaFocus-*-Portable-${{ env.VERSION }}.tar.gz
+          if-no-files-found: error
 
   macos:
     runs-on: macos-14
@@ -83,7 +89,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Python syntax check
-        run: python -m py_compile main.py i18n.py agiu.py settings_store.py v2_experience.py v2_workspace.py v2_minimal.py
+        run: python -m py_compile main.py i18n.py agiu.py settings_store.py v2_experience.py v2_workspace.py v2_minimal.py pc_runtime_fixes.py sitecustomize.py pyinstaller_runtime_hook.py
       - name: Build macOS
         run: |
           chmod +x scripts/build_unix.sh scripts/make_release_unix.sh
@@ -91,30 +97,32 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: release-macos
-          path: dist/releases/AquaFocus-macOS-2.1.6.zip
+          path: dist/releases/AquaFocus-macOS-${{ env.VERSION }}.zip
+          if-no-files-found: error
 
   release:
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')
     needs: [windows, linux, macos]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           pattern: release-*
           path: release-assets
           merge-multiple: true
-      - name: Publish v2.1.6
+      - name: Publish v2.1.8
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v2.1.6
+          tag_name: v2.1.8
           target_commitish: main
-          name: Aqua Focus v2.1.6
+          name: Aqua Focus v2.1.8
           make_latest: true
-          body_path: docs/release/v2.1.6.md
+          body_path: docs/release/v2.1.8.md
           fail_on_unmatched_files: true
           files: |
-            release-assets/AquaFocusSetup-2.1.6.exe
-            release-assets/AquaFocus-Windows-Portable-2.1.6.zip
-            release-assets/AquaFocus-macOS-2.1.6.zip
-            release-assets/AquaFocus-Linux-Portable-2.1.6.tar.gz
-            release-assets/AquaFocus-Ubuntu-Portable-2.1.6.tar.gz
+            release-assets/AquaFocusSetup-${{ env.VERSION }}.exe
+            release-assets/AquaFocus-Windows-Portable-${{ env.VERSION }}.zip
+            release-assets/AquaFocus-macOS-${{ env.VERSION }}.zip
+            release-assets/AquaFocus-Linux-Portable-${{ env.VERSION }}.tar.gz
+            release-assets/AquaFocus-Ubuntu-Portable-${{ env.VERSION }}.tar.gz
