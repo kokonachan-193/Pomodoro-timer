@@ -787,6 +787,76 @@ class MinimalShell:
                     c.create_oval(x-r*2, y-r*2, x+r*2, y+r*2, fill=self._blend(t.bg, glow, 0.30), outline="")
                     c.create_oval(x-r, y-r, x+r, y+r, fill=glow, outline="")
 
+        # Scene-style animation extensions. These are intentionally sparse and
+        # deterministic: no per-frame random generation, low object counts, and
+        # simple Canvas primitives so the Focus screen stays smooth.
+        if not a.reduce_motion:
+            fx = self._focus_phase
+            soft_pink = "#f8c8d8"
+            rain_blue = "#7fd2e8"
+            snow_white = "#f1fbff"
+            firefly = "#b8ffcf"
+            fish_col = self._blend(t.bg, t.accent, 0.45)
+
+            if a.workspace.extension_enabled("animation-sakura-petals"):
+                count = 3 if w < 760 else 5
+                for i in range(count):
+                    drift = (fx * (0.030 + i * 0.004) + i * 0.187) % 1.18
+                    px = w * (0.14 + ((i * 0.219) % 0.72)) + math.sin(fx * 1.15 + i) * (22 + i * 3)
+                    py = drift * h - h * 0.12
+                    size = max(4.0, min(10.0, h * 0.006 + (i % 3)))
+                    angle = math.sin(fx * 1.8 + i) * size * 0.42
+                    fill = self._blend(soft_pink, t.bg, 0.12)
+                    c.create_oval(px-size, py-size*0.55, px+size, py+size*0.55, fill=fill, outline="")
+                    c.create_line(px-angle, py, px+angle, py, fill=self._blend(soft_pink, t.text, 0.12), width=1)
+
+            if a.workspace.extension_enabled("animation-rain-window"):
+                count = 8 if w < 900 else 12
+                for i in range(count):
+                    base = (i * 0.097 + fx * (0.11 + i * 0.004)) % 1.0
+                    px = w * ((i * 0.137) % 1.0)
+                    py = h * base
+                    length = 22 + (i % 4) * 9
+                    slant = 5 + (i % 3) * 2
+                    c.create_line(px, py, px+slant, py+length, fill=self._blend(t.bg, rain_blue, 0.36), width=1)
+                    if i % 4 == 0:
+                        c.create_oval(px-1.2, py+length-1.2, px+1.2, py+length+1.2, fill=self._blend(t.bg, rain_blue, 0.46), outline="")
+
+            if a.workspace.extension_enabled("animation-snowfall"):
+                count = 6 if w < 900 else 10
+                for i in range(count):
+                    fall = (fx * (0.018 + i * 0.002) + i * 0.113) % 1.15
+                    px = w * ((i * 0.173 + 0.08) % 1.0) + math.sin(fx * 0.75 + i) * 13
+                    py = fall * h - h * 0.10
+                    r = 1.5 + (i % 4) * 0.45
+                    c.create_oval(px-r, py-r, px+r, py+r, fill=self._blend(t.bg, snow_white, 0.70), outline="")
+
+            if a.workspace.extension_enabled("animation-fireflies"):
+                count = 4 if w < 900 else 7
+                for i in range(count):
+                    px = w * (0.16 + ((i * 0.191) % 0.68)) + math.sin(fx * 0.88 + i * 1.7) * 24
+                    py = h * (0.24 + ((i * 0.147) % 0.54)) + math.sin(fx * 0.62 + i) * 16
+                    pulse = 0.45 + 0.35 * (0.5 + 0.5 * math.sin(fx * 2.1 + i))
+                    r = 1.4 + (i % 3) * 0.45
+                    glow = self._blend(t.bg, firefly, pulse)
+                    c.create_oval(px-r*3, py-r*3, px+r*3, py+r*3, fill=self._blend(t.bg, glow, 0.30), outline="")
+                    c.create_oval(px-r, py-r, px+r, py+r, fill=glow, outline="")
+
+            if a.workspace.extension_enabled("animation-aquarium-fish"):
+                count = 1 if w < 800 else 2
+                for i in range(count):
+                    swim = (fx * (0.020 + i * 0.006) + i * 0.41) % 1.25
+                    direction = -1 if i % 2 else 1
+                    px = (swim * (w + 180) - 90) if direction > 0 else (w + 90 - swim * (w + 180))
+                    py = h * (0.58 + i * 0.13) + math.sin(fx * 0.85 + i) * 11
+                    body = 10 + i * 2
+                    c.create_oval(px-body, py-body*0.48, px+body, py+body*0.48, fill=fish_col, outline="")
+                    tail = body * 0.72
+                    if direction > 0:
+                        c.create_polygon(px-body, py, px-body-tail, py-tail*0.55, px-body-tail, py+tail*0.55, fill=fish_col, outline="")
+                    else:
+                        c.create_polygon(px+body, py, px+body+tail, py-tail*0.55, px+body+tail, py+tail*0.55, fill=fish_col, outline="")
+
         cx, cy = w / 2, h * 0.40
         radius = min(w, h) * (0.17 if scale < 0.78 else 0.185)
         base = self._blend(t.bg, t.glow, 0.60)

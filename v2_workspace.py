@@ -245,6 +245,11 @@ class WorkspacePanels:
         {"id":"animation-bubbles","name_key":"ext_anim_bubbles","desc_key":"ext_anim_bubbles_desc","type":"animation","builtin":True},
         {"id":"animation-caustics","name_key":"ext_anim_caustics","desc_key":"ext_anim_caustics_desc","type":"animation","builtin":True},
         {"id":"animation-bioluminescence","name_key":"ext_anim_bioluminescence","desc_key":"ext_anim_bioluminescence_desc","type":"animation","builtin":True},
+        {"id":"animation-sakura-petals","name_key":"ext_anim_sakura","desc_key":"ext_anim_sakura_desc","type":"animation","builtin":True},
+        {"id":"animation-rain-window","name_key":"ext_anim_rain","desc_key":"ext_anim_rain_desc","type":"animation","builtin":True},
+        {"id":"animation-snowfall","name_key":"ext_anim_snow","desc_key":"ext_anim_snow_desc","type":"animation","builtin":True},
+        {"id":"animation-fireflies","name_key":"ext_anim_fireflies","desc_key":"ext_anim_fireflies_desc","type":"animation","builtin":True},
+        {"id":"animation-aquarium-fish","name_key":"ext_anim_fish","desc_key":"ext_anim_fish_desc","type":"animation","builtin":True},
     ]
 
     def __init__(
