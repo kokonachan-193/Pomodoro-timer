@@ -1,7 +1,8 @@
 """Headless GUI smoke test for Aqua Focus release gating.
 
 Covers the v2.1.2-style Home, responsive presets, secondary windows,
-legacy full controls, and the immersive Focus lifecycle without network/audio.
+legacy full controls, animation extensions, and the immersive Focus lifecycle
+without network/audio.
 """
 
 from __future__ import annotations
@@ -53,6 +54,20 @@ def main() -> int:
         shell.select_duration(preset)
         app.update()
     print("[smoke] OK: duration presets")
+
+    # Animation pack must be registered as Extensions, not hard-coded hidden UI.
+    expected_fx = {
+        "animation-rising-water",
+        "animation-sakura-petals",
+        "animation-rain-window",
+        "animation-snowfall",
+        "animation-fireflies",
+        "animation-aquarium-fish",
+    }
+    installed_fx = {str(x.get("id")) for x in app.workspace.installed_extensions}
+    missing_fx = expected_fx - installed_fx
+    assert not missing_fx, f"missing animation extensions: {sorted(missing_fx)}"
+    print("[smoke] OK: animation extensions registered")
 
     # Core secondary surfaces.
     checks = [
