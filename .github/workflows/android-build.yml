@@ -11,8 +11,15 @@ on:
 permissions:
   contents: write
 
+env:
+  APP_VERSION: "2.1.7"
+  ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+  ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+  ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+  ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
 concurrency:
-  group: aqua-focus-android-2.1.6
+  group: aqua-focus-android-2.1.7
   cancel-in-progress: true
 
 jobs:
@@ -32,46 +39,87 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Python syntax check
-        run: python -m py_compile android/main.py
-
       - name: Install Android build dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             git zip unzip autoconf libtool pkg-config \
             zlib1g-dev libncurses5-dev libncursesw5-dev \
-            cmake libffi-dev libssl-dev build-essential ccache
+            cmake libffi-dev libssl-dev build-essential ccache \
+            fonts-noto-cjk
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install "cython<3.1" buildozer
+
+      - name: Bundle Japanese font for Android
+        run: |
+          mkdir -p android/assets/fonts
+          FONT_PATH="$(find /usr/share/fonts -type f \( -name 'NotoSansCJK-Regular.ttc' -o -name 'NotoSansJP-Regular.otf' -o -name 'NotoSansJP-Regular.ttf' -o -name 'NotoSans-Regular.ttf' \) | sort | head -n 1)"
+          test -n "$FONT_PATH"
+          case "$FONT_PATH" in
+            *.ttc) cp "$FONT_PATH" android/assets/fonts/NotoSansCJK-Regular.ttc ;;
+            *.otf) cp "$FONT_PATH" android/assets/fonts/NotoSansJP-Regular.otf ;;
+            *.ttf) cp "$FONT_PATH" android/assets/fonts/NotoSansJP-Regular.ttf ;;
+          esac
+          ls -lh android/assets/fonts
+
+      - name: Python syntax check
+        run: python -m py_compile android/main.py
 
       - name: Build Android APK
         working-directory: android
         env:
           BUILDOZER_WARN_ON_ROOT: "0"
         run: |
-          buildozer android debug
+          if [[ -n "${ANDROID_KEYSTORE_BASE64:-}" && -n "${ANDROID_KEYSTORE_PASSWORD:-}" && -n "${ANDROID_KEY_ALIAS:-}" && -n "${ANDROID_KEY_PASSWORD:-}" ]]; then
+            echo "Building release APK for external developer signing"
+            buildozer android release
+          else
+            echo "Signing secrets are not configured; building debug APK fallback"
+            buildozer android debug
+          fi
 
-      - name: Normalize APK name
+      - name: Normalize or sign APK
         run: |
           mkdir -p dist/android
-          APK="$(find android/bin -maxdepth 1 -type f -name '*.apk' | head -n 1)"
-          test -n "$APK"
-          cp "$APK" dist/android/AquaFocus-Android-2.1.6.apk
-          ls -lh dist/android/AquaFocus-Android-2.1.6.apk
+          if [[ -n "${ANDROID_KEYSTORE_BASE64:-}" && -n "${ANDROID_KEYSTORE_PASSWORD:-}" && -n "${ANDROID_KEY_ALIAS:-}" && -n "${ANDROID_KEY_PASSWORD:-}" ]]; then
+            KEYSTORE_PATH="$RUNNER_TEMP/aquafocus-release.jks"
+            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_PATH"
+            UNSIGNED_APK="$(find android/bin -maxdepth 1 -type f \( -name '*release*.apk' -o -name '*unsigned*.apk' \) | head -n 1)"
+            test -n "$UNSIGNED_APK"
+            BUILD_TOOLS="$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -n 1)"
+            "$BUILD_TOOLS/zipalign" -p -f 4 "$UNSIGNED_APK" dist/android/AquaFocus-Android-${APP_VERSION}-aligned.apk
+            "$BUILD_TOOLS/apksigner" sign \
+              --ks "$KEYSTORE_PATH" \
+              --ks-key-alias "$ANDROID_KEY_ALIAS" \
+              --ks-pass "pass:$ANDROID_KEYSTORE_PASSWORD" \
+              --key-pass "pass:$ANDROID_KEY_PASSWORD" \
+              --out dist/android/AquaFocus-Android-${APP_VERSION}.apk \
+              dist/android/AquaFocus-Android-${APP_VERSION}-aligned.apk
+            "$BUILD_TOOLS/apksigner" verify --print-certs dist/android/AquaFocus-Android-${APP_VERSION}.apk | tee dist/android/AquaFocus-Android-${APP_VERSION}.certs.txt
+          else
+            APK="$(find android/bin -maxdepth 1 -type f -name '*.apk' | head -n 1)"
+            test -n "$APK"
+            cp "$APK" dist/android/AquaFocus-Android-${APP_VERSION}.apk
+            printf 'Debug-signed fallback. Configure ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD for a stable developer signature.\n' > dist/android/AquaFocus-Android-${APP_VERSION}.certs.txt
+          fi
+          ls -lh dist/android
 
       - uses: actions/upload-artifact@v4
         with:
-          name: AquaFocus-Android-2.1.6
-          path: dist/android/AquaFocus-Android-2.1.6.apk
+          name: AquaFocus-Android-${{ env.APP_VERSION }}
+          path: |
+            dist/android/AquaFocus-Android-${{ env.APP_VERSION }}.apk
+            dist/android/AquaFocus-Android-${{ env.APP_VERSION }}.certs.txt
           if-no-files-found: error
 
-      - name: Attach APK to v2.1.6 release
+      - name: Attach APK to v2.1.7 release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v2.1.6
+          tag_name: v2.1.7
           target_commitish: main
-          name: Aqua Focus v2.1.6
+          name: Aqua Focus v2.1.7
           make_latest: true
           fail_on_unmatched_files: true
-          files: dist/android/AquaFocus-Android-2.1.6.apk
+          files: |
+            dist/android/AquaFocus-Android-${{ env.APP_VERSION }}.apk
+            dist/android/AquaFocus-Android-${{ env.APP_VERSION }}.certs.txt
