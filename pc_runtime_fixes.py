@@ -4,9 +4,10 @@ Loaded early by either:
 - sitecustomize.py during source runs, or
 - pyinstaller_runtime_hook.py inside packaged desktop builds.
 
-v2.1.9 hotfix goals:
-- Focus animation extensions must be visibly reflected while Focus is running.
+v2.1.10 hotfix goals:
+- Animation extensions must be visibly reflected while Focus is running.
 - Installing/removing extension animations should not require restarting Focus.
+- Scene FX should remain visible on dark custom/background images.
 - Reduce Motion should calm extension FX, not make every enabled FX look absent.
 - GUI resize/theme/focus-stop glitches should fail safe instead of breaking Tk.
 """
@@ -182,7 +183,7 @@ def _install_workspace_patch() -> None:
         if root is None:
             return
 
-        def redraw():
+        def redraw_once():
             _safe_call(_reload_extensions_if_needed, self, True)
             try:
                 if callable(getattr(root, "draw_waves", None)):
@@ -196,7 +197,10 @@ def _install_workspace_patch() -> None:
             except Exception:
                 pass
 
-        _call_on_ui(root, redraw)
+        # Several redraws cover the case where the extensions window saves while
+        # the Focus canvas is being rebuilt/resized.
+        for delay in (0, 80, 180, 320, 520):
+            _call_on_ui(root, redraw_once, delay=delay)
 
     def __init__(self, root, *, data_dir: Path, theme_getter, font_family: str, font_bold: str):
         self.root = root
@@ -244,6 +248,8 @@ def _workspace_enabled(workspace, extension_id: str) -> bool:
 
 def _enabled_animation_ids(workspace) -> set[str]:
     try:
+        if hasattr(workspace, "reload_extensions_if_needed"):
+            workspace.reload_extensions_if_needed()
         if hasattr(workspace, "enabled_animation_ids"):
             return set(workspace.enabled_animation_ids())
     except Exception:
@@ -259,12 +265,11 @@ def _enabled_animation_ids(workspace) -> set[str]:
 
 
 def _draw_extension_overlay(shell, frozen: bool = False) -> None:
-    """Draw a top-level FX layer that is unmistakably visible when enabled.
+    """Draw an obvious FX layer whenever animation extensions are enabled.
 
-    The original v2_minimal drawing kept scene FX very sparse and disabled the
-    whole scene branch when Reduce Motion was on. Users could turn everything on
-    and still feel like nothing happened. This overlay intentionally keeps low
-    object counts, but makes every enabled animation visible.
+    The original Focus scene is deliberately calm. On a dark user background it
+    can look like "nothing happens" even when every animation is enabled. This
+    overlay keeps the design clean, but makes each enabled animation visible.
     """
     app = getattr(shell, "app", None)
     canvas = getattr(app, "canvas", None)
@@ -287,115 +292,124 @@ def _draw_extension_overlay(shell, frozen: bool = False) -> None:
     bg = getattr(theme, "bg", "#071116")
     text = getattr(theme, "text", "#e8f7ff")
     accent = getattr(theme, "accent", "#74e5f0")
-    glow = getattr(theme, "glow", "#315f75")
     particle = getattr(theme, "particle", "#a9fff1")
 
     try:
-        strength = max(0.45, min(2.2, float(app.settings.get("focus_visual_strength", 1.0) or 1.0)))
+        strength = max(0.85, min(2.8, float(app.settings.get("focus_visual_strength", 1.0) or 1.0)))
     except Exception:
-        strength = 1.0
+        strength = 1.25
 
     reduce_motion = bool(getattr(app, "reduce_motion", False))
-    step = 0.006 if (reduce_motion or frozen) else 0.032
+    step = 0.018 if (reduce_motion or frozen) else 0.075
     phase = float(getattr(shell, "_pc_fx_phase", 0.0)) + step
     shell._pc_fx_phase = phase
 
-    # Keep this layer out of the exact timer center as much as possible.
     center_x = w * 0.50
     center_y = h * 0.40
-    safe_radius = min(w, h) * 0.17
+    safe_radius = min(w, h) * 0.135
 
-    def far_from_timer(x, y) -> bool:
-        return (x - center_x) ** 2 + (y - center_y) ** 2 > (safe_radius * 0.95) ** 2
+    def nudge_from_timer(x, y):
+        # Do not completely skip objects; nudge them away from the timer center so
+        # all enabled effects remain visible while the clock stays readable.
+        dx = x - center_x
+        dy = y - center_y
+        if dx * dx + dy * dy < safe_radius * safe_radius:
+            y += safe_radius * (1.2 if y <= center_y else -1.2)
+        return x, y
 
-    # Gentle global shimmer when any visual FX is active. This gives instant
-    # feedback even if only water/caustics/light extensions are enabled.
-    if {
-        "animation-light-shafts", "animation-caustics", "animation-depth-particles",
-        "animation-bioluminescence", "animation-bubbles", "animation-rising-water",
-    } & enabled:
-        for i in range(10 if w < 1000 else 16):
-            x = (i * 197 + int(phase * 880)) % max(1, w)
-            y = (i * 83 + int(math.sin(phase * 1.7 + i) * 18) + int(h * 0.17)) % max(1, int(h * 0.78))
-            if not far_from_timer(x, y):
-                continue
-            r = 1.4 + (i % 3) * 0.55
-            col = _blend_hex(bg, particle, 0.76)
-            canvas.create_oval(x - r * 2.2, y - r * 2.2, x + r * 2.2, y + r * 2.2, fill=_blend_hex(bg, col, 0.44), outline="")
-            canvas.create_oval(x - r, y - r, x + r, y + r, fill=col, outline="")
+    # Always-visible response layer when any animation is enabled. This makes ON
+    # state immediately obvious even for subtle water/caustics/light effects.
+    shimmer_count = max(18, min(42, int((18 if w < 1000 else 28) * strength)))
+    for i in range(shimmer_count):
+        x = (i * 197 + int(phase * 1550)) % max(1, w)
+        y = (i * 89 + int(math.sin(phase * 2.4 + i) * 26) + int(h * 0.12)) % max(1, int(h * 0.82))
+        x, y = nudge_from_timer(x, y)
+        r = 1.6 + (i % 4) * 0.7
+        col = _blend_hex(bg, particle, 0.86)
+        canvas.create_oval(x - r * 2.5, y - r * 2.5, x + r * 2.5, y + r * 2.5, fill=_blend_hex(bg, col, 0.54), outline="")
+        canvas.create_oval(x - r, y - r, x + r, y + r, fill=col, outline="")
 
     if "animation-sakura-petals" in enabled:
-        count = int(10 * strength) if w >= 900 else int(7 * strength)
-        count = max(6, min(18, count))
-        petal = _blend_hex("#ffd1df", text, 0.10)
+        count = max(12, min(30, int((14 if w < 1000 else 22) * strength)))
+        petal = _blend_hex("#ffd1df", text, 0.08)
+        edge = "#ff7fb5"
         for i in range(count):
-            drift = (phase * (0.11 + i * 0.006) + i * 0.137) % 1.18
-            x = w * (0.06 + ((i * 0.227) % 0.88)) + math.sin(phase * 2.0 + i) * (24 + i % 5)
+            drift = (phase * (0.23 + i * 0.008) + i * 0.091) % 1.20
+            x = w * (0.04 + ((i * 0.227) % 0.92)) + math.sin(phase * 2.8 + i) * (32 + i % 7)
             y = drift * h - h * 0.12
-            if not far_from_timer(x, y):
-                y += safe_radius * 1.4
-            size = max(5.0, min(13.0, h * 0.007 + (i % 4)))
-            canvas.create_oval(x - size, y - size * 0.55, x + size, y + size * 0.55, fill=petal, outline="")
-            canvas.create_line(x - size * 0.35, y, x + size * 0.45, y, fill="#ff8fbd", width=1)
+            x, y = nudge_from_timer(x, y)
+            size = max(6.0, min(16.0, h * 0.009 + (i % 5)))
+            canvas.create_oval(x - size, y - size * 0.58, x + size, y + size * 0.58, fill=petal, outline="")
+            canvas.create_line(x - size * 0.42, y, x + size * 0.55, y, fill=edge, width=1)
 
     if "animation-rain-window" in enabled:
-        count = int(22 * strength) if w >= 900 else int(14 * strength)
-        count = max(12, min(36, count))
-        rain = _blend_hex(bg, "#8cecff", 0.72)
+        count = max(20, min(54, int((26 if w < 1000 else 38) * strength)))
+        rain = _blend_hex(bg, "#a2f2ff", 0.84)
         for i in range(count):
-            base = (i * 0.071 + phase * (0.45 + i * 0.006)) % 1.0
-            x = w * ((i * 0.173 + 0.03) % 1.0)
+            base = (i * 0.049 + phase * (0.78 + i * 0.006)) % 1.0
+            x = w * ((i * 0.137 + 0.03) % 1.0)
             y = h * base
-            length = 32 + (i % 5) * 8
-            slant = 6 + (i % 4) * 2
-            if not far_from_timer(x, y):
-                x += safe_radius * 1.1
+            x, y = nudge_from_timer(x, y)
+            length = 40 + (i % 6) * 9
+            slant = 7 + (i % 4) * 2
             canvas.create_line(x, y, x + slant, y + length, fill=rain, width=1)
             if i % 5 == 0:
-                canvas.create_oval(x - 1.6, y + length - 1.6, x + 1.6, y + length + 1.6, fill=_blend_hex(bg, rain, 0.78), outline="")
+                canvas.create_oval(x - 1.8, y + length - 1.8, x + 1.8, y + length + 1.8, fill=_blend_hex(bg, rain, 0.84), outline="")
 
     if "animation-snowfall" in enabled:
-        count = int(18 * strength) if w >= 900 else int(11 * strength)
-        count = max(8, min(28, count))
-        snow = _blend_hex(bg, "#f5fdff", 0.88)
+        count = max(14, min(38, int((16 if w < 1000 else 28) * strength)))
+        snow = _blend_hex(bg, "#f7feff", 0.94)
         for i in range(count):
-            fall = (phase * (0.075 + i * 0.003) + i * 0.109) % 1.15
-            x = w * ((i * 0.193 + 0.08) % 1.0) + math.sin(phase * 1.1 + i) * 18
+            fall = (phase * (0.16 + i * 0.003) + i * 0.073) % 1.16
+            x = w * ((i * 0.193 + 0.06) % 1.0) + math.sin(phase * 1.7 + i) * 22
             y = fall * h - h * 0.10
-            if not far_from_timer(x, y):
-                x -= safe_radius * 1.25
-            r = 1.8 + (i % 4) * 0.65
+            x, y = nudge_from_timer(x, y)
+            r = 2.1 + (i % 4) * 0.75
             canvas.create_oval(x - r, y - r, x + r, y + r, fill=snow, outline="")
 
     if "animation-fireflies" in enabled:
-        count = int(10 * strength) if w >= 900 else int(6 * strength)
-        count = max(5, min(16, count))
+        count = max(8, min(22, int((9 if w < 1000 else 15) * strength)))
         for i in range(count):
-            x = w * (0.08 + ((i * 0.211) % 0.84)) + math.sin(phase * 1.35 + i * 1.7) * 34
-            y = h * (0.16 + ((i * 0.149) % 0.64)) + math.sin(phase * 1.05 + i) * 22
-            if not far_from_timer(x, y):
-                y += safe_radius * 1.25
-            pulse = 0.58 + 0.30 * (0.5 + 0.5 * math.sin(phase * 4.0 + i))
-            glow_col = _blend_hex(bg, "#c7ffd6", pulse)
-            r = 1.8 + (i % 3) * 0.55
-            canvas.create_oval(x - r * 4, y - r * 4, x + r * 4, y + r * 4, fill=_blend_hex(bg, glow_col, 0.36), outline="")
+            x = w * (0.07 + ((i * 0.211) % 0.86)) + math.sin(phase * 2.05 + i * 1.7) * 46
+            y = h * (0.14 + ((i * 0.149) % 0.68)) + math.sin(phase * 1.65 + i) * 34
+            x, y = nudge_from_timer(x, y)
+            pulse = 0.68 + 0.30 * (0.5 + 0.5 * math.sin(phase * 5.0 + i))
+            glow_col = _blend_hex(bg, "#d6ffd8", pulse)
+            r = 2.2 + (i % 3) * 0.65
+            canvas.create_oval(x - r * 5, y - r * 5, x + r * 5, y + r * 5, fill=_blend_hex(bg, glow_col, 0.46), outline="")
             canvas.create_oval(x - r, y - r, x + r, y + r, fill=glow_col, outline="")
 
     if "animation-aquarium-fish" in enabled:
-        count = 2 if w < 1000 else 3
-        fish_col = _blend_hex(bg, accent, 0.76)
+        count = 3 if w < 1000 else 4
+        fish_col = _blend_hex(bg, accent, 0.84)
+        fin_col = _blend_hex(bg, "#f6b1cf", 0.62)
         for i in range(count):
-            swim = (phase * (0.11 + i * 0.025) + i * 0.31) % 1.30
+            swim = (phase * (0.20 + i * 0.035) + i * 0.25) % 1.34
             direction = -1 if i % 2 else 1
-            x = (swim * (w + 220) - 110) if direction > 0 else (w + 110 - swim * (w + 220))
-            y = h * (0.66 + i * 0.08) + math.sin(phase * 1.5 + i) * 16
-            body = 13 + i * 3
-            canvas.create_oval(x - body, y - body * 0.48, x + body, y + body * 0.48, fill=fish_col, outline="")
-            tail = body * 0.78
+            x = (swim * (w + 260) - 130) if direction > 0 else (w + 130 - swim * (w + 260))
+            y = h * (0.60 + (i % 3) * 0.11) + math.sin(phase * 2.1 + i) * 20
+            x, y = nudge_from_timer(x, y)
+            body = 15 + i * 2
+            canvas.create_oval(x - body, y - body * 0.52, x + body, y + body * 0.52, fill=fish_col, outline="")
+            tail = body * 0.88
             if direction > 0:
-                canvas.create_polygon(x - body, y, x - body - tail, y - tail * 0.55, x - body - tail, y + tail * 0.55, fill=fish_col, outline="")
+                canvas.create_polygon(x - body, y, x - body - tail, y - tail * 0.58, x - body - tail, y + tail * 0.58, fill=fin_col, outline="")
+                canvas.create_oval(x + body * 0.35, y - 2, x + body * 0.35 + 3, y + 1, fill="#071116", outline="")
             else:
-                canvas.create_polygon(x + body, y, x + body + tail, y - tail * 0.55, x + body + tail, y + tail * 0.55, fill=fish_col, outline="")
+                canvas.create_polygon(x + body, y, x + body + tail, y - tail * 0.58, x + body + tail, y + tail * 0.58, fill=fin_col, outline="")
+                canvas.create_oval(x - body * 0.35 - 3, y - 2, x - body * 0.35, y + 1, fill="#071116", outline="")
+
+    # Lightweight indicator/debug cue: visible only when extensions are active.
+    # It helps users confirm toggles are being read without adding a full panel.
+    try:
+        label = "FX " + str(len([x for x in enabled if x.startswith("animation-")]))
+        canvas.create_text(
+            w - 18, h - 16, text=label, anchor="se",
+            fill=_blend_hex(bg, text, 0.62),
+            font=(getattr(app, "FONT_UI_BOLD", "Segoe UI"), 10, "bold"),
+        )
+    except Exception:
+        pass
 
 
 def _draw_safe_fallback(shell) -> None:
@@ -456,6 +470,9 @@ def _install_minimal_patch() -> None:
                                 shell._apply_focus_scale()
                                 if callable(getattr(app, "_place_secondary_chrome", None)):
                                     app._place_secondary_chrome()
+                                # Keep extension FX alive even when the original
+                                # draw path throttles while the timer text updates.
+                                _safe_call(_draw_extension_overlay, shell, bool(getattr(app, "is_paused", False)))
                     except Exception:
                         pass
             app.update_loop = update_loop_wrapper
