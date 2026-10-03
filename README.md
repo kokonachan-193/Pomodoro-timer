@@ -6,13 +6,13 @@
 
 <p align="center">
   <strong>Descend into focus.</strong><br />
-  A deep-sea focus workspace — immersive timers, music, tasks, soundscapes, stats and extensions.
+  A simple, modern Pomodoro workspace — clean focus, subtle motion, music, tasks, stats and extensions.
 </p>
 
 <p align="center">
   <a href="README.ja.md">日本語</a>
   ·
-  <b>v2.1.7</b>
+  <a href="https://github.com/kokonachan-193/Pomodoro-timer/releases/tag/v2.1.8"><strong>Aqua Focus v2.1.8</strong></a>
   ·
   Windows · macOS · Ubuntu · Linux · Android
 </p>
@@ -21,14 +21,14 @@
 
 ## Get the app
 
-No build required. Download the package for your platform from the GitHub Release.
+No build required. Download the package for your platform from [**Aqua Focus v2.1.8**](https://github.com/kokonachan-193/Pomodoro-timer/releases/tag/v2.1.8).
 
 | Platform | Package | Run |
 | :--- | :--- | :--- |
-| **Windows 10 / 11** | `AquaFocusSetup-2.1.7.exe` | Installer · recommended |
-| **Windows** | `AquaFocus-Windows-Portable-2.1.7.zip` | Unzip → `AquaFocus.exe` |
-| **macOS** | `AquaFocus-macOS-2.1.7.zip` | Unzip → `AquaFocus.app` |
-| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.1.7.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
+| **Windows 10 / 11** | `AquaFocusSetup-2.1.8.exe` | Installer · recommended |
+| **Windows** | `AquaFocus-Windows-Portable-2.1.8.zip` | Unzip → `AquaFocus.exe` |
+| **macOS** | `AquaFocus-macOS-2.1.8.zip` | Unzip → `AquaFocus.app` |
+| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.1.8.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
 | **Android 8+** | `AquaFocus-Android-2.1.7.apk` | Install the APK |
 
 ffmpeg is **bundled** on desktop. Existing desktop installs can check GitHub Releases through **AGIU**.
@@ -37,24 +37,21 @@ Android release signing notes: [`docs/android-signing.md`](docs/android-signing.
 
 ---
 
-## What’s new in 2.1.7
+## What’s new in 2.1.8
 
-- **Android Japanese text fixed** — Android builds now bundle a Noto Japanese-capable font and register it before falling back to device fonts.
-- **Safer fallback for unsupported devices** — if no Japanese-capable font can be loaded, Android opens in English instead of showing tofu/garbled text.
-- **Responsive Android UI** — phone-size metrics now drive spacing, clock size, button height and Focus canvas size to reduce small-screen breakage.
-- **Keyboard focus fix** — Android uses `Window.softinput_mode = "pan"` so the layout is less likely to break when a text field is focused.
-- **Focus visuals stabilized** — water and wave geometry are clamped inside the view to prevent broken wave edges.
-- **Sakura petals + Reduce Motion** — Sakura petals were added as a lightweight visual, and Reduce Motion can calm the animated effects.
-- **APK signing workflow** — GitHub Actions can sign release APKs when Android signing secrets are configured and uploads a certificate fingerprint report.
-- **Signing identity display** — the Android app footer shows a shortened APK certificate SHA-256 fingerprint when available.
+- **Desktop animation extensions now apply live** — installing or removing animation extensions in Extensions is reflected in the Focus canvas without restarting Focus.
+- **Extension state is reloaded while Focus is running** — `extensions.json` changes are detected during drawing, so installed/removed animation state no longer feels ignored.
+- **Removed animations stay removed** — built-in animation defaults are added only on first run and are no longer resurrected after the user removes them.
+- **GUI display stability fixes** — stale Tk/CTk widget calls after resize, theme rebuilds and Focus stop are guarded to reduce random display glitches.
+- **Responsive Focus clock fix** — the v3 Focus timer no longer snaps back to an oversized fixed font every tick.
+- **Source and packaged builds covered** — `sitecustomize.py` loads the runtime fixes for `python main.py`, and the PyInstaller runtime hook loads them in desktop packages.
+- **Build/release updated** — desktop GitHub Actions now publish v2.1.8 artifacts and include the runtime fix modules.
 
-### Carried forward from 2.1.4 / 2.1.6
+### Carried forward from 2.1.7 Android
 
-- **Responsive dashboard** — compact windows hide the heavy sidebar without destroying it, while large and ultrawide windows keep readable card widths instead of stretching everything.
-- **Features preserved** — Quick Dive, custom timing, intention, music, playlist, volume, tasks, stats, soundscapes, extensions, Focus Lock, updater, themes and background controls remain available.
-- **Progressive disclosure** — advanced and occasional controls are reachable from a compact `•••` menu instead of crowding the main screen.
-- **Focus music controls restored** — the in-session menu stays reachable so tracks can be added, skipped, or navigated without leaving focus.
-- **Rising-water progress animation** — the focus view fills upward with a subtle animated waterline tied to elapsed focus time; Reduce Motion still disables the motion.
+- Android Japanese-capable font bundling and safer UI fallback.
+- Android responsive Focus layout and keyboard-focus stability.
+- Android wave geometry stabilization, Sakura petals and APK signing workflow.
 
 ---
 
@@ -106,5 +103,5 @@ buildozer android debug
 ---
 
 <p align="center">
-  <sub>Aqua Focus · Kokona · Deep Sea focus workspace</sub>
+  <sub>Aqua Focus · Kokona · Modern Pomodoro focus workspace</sub>
 </p>
