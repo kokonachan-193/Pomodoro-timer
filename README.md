@@ -12,7 +12,7 @@
 <p align="center">
   <a href="README.ja.md">日本語</a>
   ·
-  <b>v2.1.4</b>
+  <b>v2.1.7</b>
   ·
   Windows · macOS · Ubuntu · Linux · Android
 </p>
@@ -25,37 +25,36 @@ No build required. Download the package for your platform from the GitHub Releas
 
 | Platform | Package | Run |
 | :--- | :--- | :--- |
-| **Windows 10 / 11** | `AquaFocusSetup-2.1.4.exe` | Installer · recommended |
-| **Windows** | `AquaFocus-Windows-Portable-2.1.4.zip` | Unzip → `AquaFocus.exe` |
-| **macOS** | `AquaFocus-macOS-2.1.4.zip` | Unzip → `AquaFocus.app` |
-| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.1.4.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
-| **Android 8+** | `AquaFocus-Android-2.1.4.apk` | Install the APK |
+| **Windows 10 / 11** | `AquaFocusSetup-2.1.7.exe` | Installer · recommended |
+| **Windows** | `AquaFocus-Windows-Portable-2.1.7.zip` | Unzip → `AquaFocus.exe` |
+| **macOS** | `AquaFocus-macOS-2.1.7.zip` | Unzip → `AquaFocus.app` |
+| **Ubuntu / Linux** | `AquaFocus-*-Portable-2.1.7.tar.gz` | `tar xzf … && ./AquaFocus/AquaFocus` |
+| **Android 8+** | `AquaFocus-Android-2.1.7.apk` | Install the APK |
 
 ffmpeg is **bundled** on desktop. Existing desktop installs can check GitHub Releases through **AGIU**.
 
+Android release signing notes: [`docs/android-signing.md`](docs/android-signing.md)
+
 ---
 
-## What’s new in 2.1.4
+## What’s new in 2.1.7
 
-- **CTkEntry crash fixed at the source** — preset changes now ignore stale Tk handles and still update the authoritative timer state, preventing `invalid command name ...ctkentry.!entry`
-- **Responsive dashboard** — compact windows hide the heavy sidebar without destroying it, while large and ultrawide windows keep readable card widths instead of stretching everything
-- **Features preserved** — Quick Dive, custom timing, intention, music, playlist, volume, tasks, stats, soundscapes, extensions, Focus Lock, updater, themes and background controls remain available
-- **Progressive disclosure** — advanced and occasional controls are reachable from a compact `•••` menu instead of crowding the main screen
-- **Focus music controls restored** — the in-session menu stays reachable so tracks can be added, skipped, or navigated without leaving focus
-- **Rising-water progress animation** — the focus view now fills upward with a subtle animated waterline tied to elapsed focus time; Reduce Motion still disables the motion
+- **Android Japanese text fixed** — Android builds now bundle a Noto Japanese-capable font and register it before falling back to device fonts.
+- **Safer fallback for unsupported devices** — if no Japanese-capable font can be loaded, Android opens in English instead of showing tofu/garbled text.
+- **Responsive Android UI** — phone-size metrics now drive spacing, clock size, button height and Focus canvas size to reduce small-screen breakage.
+- **Keyboard focus fix** — Android uses `Window.softinput_mode = "pan"` so the layout is less likely to break when a text field is focused.
+- **Focus visuals stabilized** — water and wave geometry are clamped inside the view to prevent broken wave edges.
+- **Sakura petals + Reduce Motion** — Sakura petals were added as a lightweight visual, and Reduce Motion can calm the animated effects.
+- **APK signing workflow** — GitHub Actions can sign release APKs when Android signing secrets are configured and uploads a certificate fingerprint report.
+- **Signing identity display** — the Android app footer shows a shortened APK certificate SHA-256 fingerprint when available.
 
-### Carried forward from 2.0.0
+### Carried forward from 2.1.4 / 2.1.6
 
-- **Deep Sea UI** — animated caustic light, bubbles, glass-like cards and a calmer visual hierarchy
-- **Quick Dive** — Focus, Deep Dive, Countdown, Stopwatch and Alarm from one launcher
-- **Deep Dive** — one-click 90-minute low-distraction session
-- **Coral Tasks** — persistent tasks that collect focused minutes automatically
-- **Abyss Stats** — today / week / all-time focus tracking with a 7-day chart
-- **Ocean Soundscape** — independent Ocean / Rain / Brown Noise ambient layer
-- **Reef Extensions** — online catalog foundation for themes, sounds and focus presets
-- **Reduce Motion** — lower-motion mode for comfort and accessibility
-- **Music reliability** — yt-dlp/ffmpeg streaming headers and fallback logic retained from v1.2
-- **Cross-platform** — Windows, macOS, Linux / Ubuntu and Android packages
+- **Responsive dashboard** — compact windows hide the heavy sidebar without destroying it, while large and ultrawide windows keep readable card widths instead of stretching everything.
+- **Features preserved** — Quick Dive, custom timing, intention, music, playlist, volume, tasks, stats, soundscapes, extensions, Focus Lock, updater, themes and background controls remain available.
+- **Progressive disclosure** — advanced and occasional controls are reachable from a compact `•••` menu instead of crowding the main screen.
+- **Focus music controls restored** — the in-session menu stays reachable so tracks can be added, skipped, or navigated without leaving focus.
+- **Rising-water progress animation** — the focus view fills upward with a subtle animated waterline tied to elapsed focus time; Reduce Motion still disables the motion.
 
 ---
 
@@ -64,7 +63,7 @@ ffmpeg is **bundled** on desktop. Existing desktop installs can check GitHub Rel
 | Area | Included |
 | :--- | :--- |
 | **Focus** | Pomodoro, 25/5 · 50/10 · 90/20, long breaks, session intention |
-| **Modes** | Focus · Deep Dive · Countdown · Stopwatch · Blue Alarm |
+| **Modes** | Focus · Deep Dive · Countdown · Stopwatch · Alarm |
 | **Music** | YouTube / Spotify-matched / direct streams, playlists, audio output selection |
 | **Soundscape** | Ocean · Rain · Brown Noise as a separate ambient layer |
 | **Tasks** | Persistent tasks, completion state, focus-minute attribution |
