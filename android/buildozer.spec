@@ -5,8 +5,8 @@ package.domain = com.kokonachan
 source.dir = .
 source.include_exts = py,png,jpg,kv,json,ttf,otf,ttc
 source.include_patterns = assets/fonts/*
-version = 2.1.7
-android.numeric_version = 217
+version = 2.1.8
+android.numeric_version = 218
 requirements = python3==3.11.9,hostpython3==3.11.9,kivy==2.3.1,pyjnius,yt-dlp,plyer
 orientation = portrait
 fullscreen = 0
