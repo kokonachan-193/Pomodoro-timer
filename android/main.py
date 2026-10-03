@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 
 from kivy.app import App
 from kivy.clock import Clock
+from kivy.core.text import LabelBase
 from kivy.core.window import Window
 from kivy.graphics import Color, Ellipse, Line, Mesh, Rectangle
 from kivy.lang import Builder
@@ -27,6 +28,16 @@ if platform == "android":
     from android.permissions import Permission, request_permissions
     from jnius import autoclass
 
+
+FONT_CANDIDATES = (
+    "/system/fonts/NotoSansCJK-Regular.ttc",
+    "/system/fonts/NotoSansCJKjp-Regular.otf",
+    "/system/fonts/NotoSansJP-Regular.otf",
+    "/system/fonts/NotoSansJP-VF.ttf",
+    "/system/fonts/NotoSans-Regular.ttf",
+    "/system/fonts/DroidSansFallback.ttf",
+    "/system/fonts/Roboto-Regular.ttf",
+)
 
 STRINGS = {
     "ja": {
@@ -56,6 +67,15 @@ STRINGS = {
         "break": "休憩 · 次のブロック前に回復",
         "next_focus": "次の集中ブロック",
         "language": "言語",
+        "font_status_ok": "日本語フォント適用済み",
+        "font_status_fallback": "端末標準フォントを使用中",
+        "resolving": "音声を準備中…",
+        "spotify_unavailable": "Android版ではSpotifyフル再生は未対応です",
+        "yt_dlp_missing": "YouTube再生モジュールが見つかりません",
+        "no_stream": "再生できる音声ストリームが見つかりません",
+        "playback_error": "再生エラー: {msg}",
+        "mediaplayer_error": "MediaPlayerエラー: {msg}",
+        "playing": "再生中 · {title}",
     },
     "en": {
         "tagline": "one task. one session.",
@@ -84,8 +104,30 @@ STRINGS = {
         "break": "Break · recover before the next block",
         "next_focus": "Next focus block",
         "language": "Language",
+        "font_status_ok": "Japanese-capable font active",
+        "font_status_fallback": "Using device default font",
+        "resolving": "Resolving audio…",
+        "spotify_unavailable": "Spotify full-track playback is not available on Android yet",
+        "yt_dlp_missing": "YouTube resolver module is unavailable",
+        "no_stream": "No playable audio stream found",
+        "playback_error": "Playback error: {msg}",
+        "mediaplayer_error": "MediaPlayer error: {msg}",
+        "playing": "Playing · {title}",
     },
 }
+
+
+def install_android_font() -> str:
+    """Register a Japanese-capable system font when available."""
+    for candidate in FONT_CANDIDATES:
+        path = Path(candidate)
+        if path.exists():
+            try:
+                LabelBase.register(name="AquaJP", fn_regular=str(path))
+                return "AquaJP"
+            except Exception:
+                continue
+    return "Roboto"
 
 
 class FocusVisual(Widget):
@@ -112,6 +154,27 @@ class FocusVisual(Widget):
             self.phase += dt
         self.redraw()
 
+    def _wave_surfaces(self, surface_y: float, width: float, amp: float, seg: int):
+        front, back = [], []
+        gap = dp(8)
+        for i in range(seg + 1):
+            x = self.x + width * i / seg
+            nx = i / seg
+            phase = self.phase * 2.4 + nx * math.tau * 2.45
+            primary = math.sin(phase) * amp
+            secondary = math.sin(phase * 0.55 + 0.8) * amp * 0.22
+            y = surface_y + primary + secondary
+            front.append((x, y))
+            back.append((x, y + gap + math.sin(phase + 0.8) * amp * 0.14))
+        return front, back
+
+    def _mesh_to_bottom(self, surface, bottom_y):
+        vertices, indices = [], []
+        for i, (x, y) in enumerate(surface):
+            vertices += [x, y, 0, 0, x, bottom_y, 0, 0]
+            indices += [2 * i, 2 * i + 1]
+        return vertices, indices
+
     def redraw(self):
         w, h = self.width, self.height
         if w <= 4 or h <= 4:
@@ -119,102 +182,76 @@ class FocusVisual(Widget):
         x0, y0 = self.x, self.y
         self.canvas.clear()
         with self.canvas:
-            # Deep-sea background.
-            for i in range(12):
-                t = i / 11
-                Color(0.018 + t * 0.018, 0.055 + t * 0.045, 0.085 + t * 0.07, 1)
-                Rectangle(pos=(x0, y0 + h * i / 12), size=(w, h / 12 + 2))
+            for i in range(14):
+                t = i / 13
+                Color(0.014 + t * 0.018, 0.050 + t * 0.045, 0.080 + t * 0.075, 1)
+                Rectangle(pos=(x0, y0 + h * i / 14), size=(w, h / 14 + 2))
 
-            # Soft caustic shafts behind the water.
             if self.caustics_enabled:
                 for j in range(3):
                     pts = []
-                    for i in range(18):
-                        x = x0 + w * i / 17
-                        y = y0 + h * (0.76 - j * 0.11) + math.sin(self.phase * 0.9 + i * 0.55 + j) * dp(7)
+                    for i in range(20):
+                        x = x0 + w * i / 19
+                        y = y0 + h * (0.78 - j * 0.12) + math.sin(self.phase * 0.8 + i * 0.52 + j) * dp(6)
                         pts.extend((x, y))
-                    Color(0.38, 0.86, 0.88, 0.11)
-                    Line(points=pts, width=1.15)
+                    Color(0.38, 0.86, 0.88, 0.10)
+                    Line(points=pts, width=1.0, cap="round", joint="round")
 
             p = max(0.0, min(1.0, float(self.progress)))
             if self.water_enabled:
                 level = p if self.mode == "FOCUS" else max(0.0, 0.14 - p * 0.14)
                 surface_y = y0 + h * (0.06 + 0.58 * level)
-                amp = dp(8)
-                seg = 40
+                amp = dp(7.5)
+                front, back = self._wave_surfaces(surface_y, w, amp, 44)
 
-                def wave(offset=0.0, amp_scale=1.0, shift=0.0):
-                    out = []
-                    for i in range(seg + 1):
-                        x = x0 + w * i / seg
-                        y = surface_y + offset + math.sin(self.phase * 2.25 + i * 0.48 + shift) * amp * amp_scale
-                        out.append((x, y))
-                    return out
-
-                back = wave(dp(8), 0.66, 1.2)
-                front = wave(0, 1.0, 0)
-
-                # Triangle strip from wave surface to bottom = true translucent water body.
-                vertices = []
-                indices = []
-                for i, (x, y) in enumerate(back):
-                    vertices += [x, y, 0, 0, x, y0, 0, 0]
-                    indices += [2*i, 2*i+1]
-                Color(0.08, 0.62, 0.78, 0.19)
+                vertices, indices = self._mesh_to_bottom(back, y0)
+                Color(0.08, 0.62, 0.78, 0.16)
                 Mesh(vertices=vertices, indices=indices, mode="triangle_strip")
 
-                vertices = []
-                indices = []
-                for i, (x, y) in enumerate(front):
-                    vertices += [x, y, 0, 0, x, y0, 0, 0]
-                    indices += [2*i, 2*i+1]
-                Color(0.08, 0.72, 0.82, 0.28)
+                vertices, indices = self._mesh_to_bottom(front, y0)
+                Color(0.08, 0.72, 0.82, 0.27)
                 Mesh(vertices=vertices, indices=indices, mode="triangle_strip")
 
-                # Surface crests.
-                Color(0.48, 0.95, 0.94, 0.72)
-                Line(points=[v for pnt in front for v in pnt], width=1.9)
-                Color(0.28, 0.76, 0.88, 0.34)
-                Line(points=[v for pnt in back for v in pnt], width=1.1)
+                Color(0.47, 0.95, 0.94, 0.74)
+                Line(points=[v for pnt in front for v in pnt], width=1.8, cap="round", joint="round")
+                Color(0.30, 0.78, 0.88, 0.32)
+                Line(points=[v for pnt in back for v in pnt], width=1.0, cap="round", joint="round")
 
-                # Underwater caustics.
+                depth = max(dp(60), surface_y - y0)
+
                 if self.caustics_enabled:
                     for j in range(4):
                         pts = []
-                        yy = surface_y - dp(36 + j * 34)
-                        for i in range(14):
-                            xx = x0 + w * i / 13
-                            y = yy + math.sin(self.phase * 1.7 + i * 0.72 + j) * dp(4 + j)
+                        yy = surface_y - dp(34 + j * 34)
+                        for i in range(15):
+                            xx = x0 + w * i / 14
+                            y = yy + math.sin(self.phase * 1.55 + i * 0.72 + j) * dp(3.5 + j)
                             pts.extend((xx, y))
-                        Color(0.55, 0.96, 0.94, 0.13)
-                        Line(points=pts, width=1)
+                        Color(0.55, 0.96, 0.94, 0.12)
+                        Line(points=pts, width=1, cap="round", joint="round")
 
-                # Bubbles stay under the water surface.
                 if self.bubbles_enabled:
-                    depth = max(dp(60), surface_y - y0)
-                    for i in range(16):
+                    for i in range(14):
                         bx = x0 + ((i * 97) % max(1, int(w))) + math.sin(self.phase + i) * dp(8)
-                        travel = (self.phase * (34 + i * 1.7) + i * 53) % depth
+                        travel = (self.phase * (30 + i * 1.4) + i * 53) % depth
                         by = y0 + travel
-                        if by > surface_y - dp(8):
+                        if by > surface_y - dp(7):
                             continue
-                        r = dp(1.5 + (i % 4) * 0.65)
-                        Color(0.76, 0.96, 1.0, 0.34)
-                        Line(circle=(bx, by, r), width=0.8)
+                        r = dp(1.4 + (i % 4) * 0.65)
+                        Color(0.76, 0.96, 1.0, 0.32)
+                        Line(circle=(bx, by, r), width=0.75)
 
                 if self.glow_enabled:
-                    depth = max(dp(50), surface_y - y0)
-                    for i in range(11):
+                    for i in range(9):
                         gx = x0 + ((i * 137 + 33) % max(1, int(w))) + math.sin(self.phase * 0.7 + i) * dp(11)
-                        gy = y0 + dp(18) + ((i * 71 + self.phase * (12 + i)) % max(dp(20), depth - dp(20)))
-                        rr = dp(1.3 + (i % 3) * 0.45)
-                        Color(0.43, 0.98, 0.86, 0.17)
-                        Ellipse(pos=(gx-rr*3, gy-rr*3), size=(rr*6, rr*6))
-                        Color(0.62, 1.0, 0.91, 0.76)
-                        Ellipse(pos=(gx-rr, gy-rr), size=(rr*2, rr*2))
+                        gy = y0 + dp(18) + ((i * 71 + self.phase * (10 + i)) % max(dp(20), depth - dp(20)))
+                        rr = dp(1.2 + (i % 3) * 0.45)
+                        Color(0.43, 0.98, 0.86, 0.15)
+                        Ellipse(pos=(gx - rr * 3, gy - rr * 3), size=(rr * 6, rr * 6))
+                        Color(0.62, 1.0, 0.91, 0.70)
+                        Ellipse(pos=(gx - rr, gy - rr), size=(rr * 2, rr * 2))
 
-            # Circular timer guide.
-            cx, cy = x0 + w/2, y0 + h*0.58
+            cx, cy = x0 + w / 2, y0 + h * 0.58
             rad = min(w, h) * 0.20
             Color(0.42, 0.68, 0.72, 0.22)
             Line(circle=(cx, cy, rad), width=1.3)
@@ -225,6 +262,17 @@ class FocusVisual(Widget):
 
 KV = r"""
 #:import dp kivy.metrics.dp
+
+<Label>:
+    font_name: app.font_name
+    markup: False
+<Button>:
+    font_name: app.font_name
+<ToggleButton>:
+    font_name: app.font_name
+<TextInput>:
+    font_name: app.font_name
+    write_tab: False
 
 <PrimaryButton@Button>:
     background_normal: ""
@@ -279,7 +327,7 @@ KV = r"""
             BoxLayout:
                 orientation: "horizontal"
                 size_hint_y: None
-                height: dp(48)
+                height: dp(54)
                 BoxLayout:
                     orientation: "vertical"
                     Label:
@@ -291,7 +339,7 @@ KV = r"""
                         halign: "left"
                         valign: "middle"
                     Label:
-                        text: root.t("tagline")
+                        text: root.t("tagline", root.language)
                         color: .49, .61, .64, 1
                         font_size: "10sp"
                         text_size: self.size
@@ -299,26 +347,27 @@ KV = r"""
                         valign: "top"
                 QuietButton:
                     text: "JA / EN"
-                    width: dp(76)
+                    width: dp(82)
                     size_hint_x: None
                     on_release: root.toggle_language()
 
             Label:
-                text: root.t("question")
+                text: root.t("question", root.language)
                 color: .94, .98, .98, 1
                 font_size: "20sp"
                 bold: True
                 size_hint_y: None
-                height: dp(34)
+                height: dp(42)
                 text_size: self.size
                 halign: "left"
+                valign: "middle"
 
             TextInput:
                 id: intention
-                hint_text: root.t("task_hint")
+                hint_text: root.t("task_hint", root.language)
                 multiline: False
                 size_hint_y: None
-                height: dp(48)
+                height: dp(50)
                 foreground_color: .92, .97, .97, 1
                 hint_text_color: .43, .56, .59, 1
                 background_normal: ""
@@ -346,7 +395,7 @@ KV = r"""
 
             FloatLayout:
                 size_hint_y: None
-                height: dp(470)
+                height: max(dp(380), min(dp(520), root.height * .52))
                 FocusVisual:
                     pos: self.parent.pos
                     size: self.parent.size
@@ -361,32 +410,35 @@ KV = r"""
                 Label:
                     text: root.clock_text
                     color: .95, .99, .99, 1
-                    font_size: "64sp"
+                    font_size: "60sp"
                     bold: True
-                    size_hint: .82, None
-                    height: dp(92)
-                    pos_hint: {"center_x": .5, "center_y": .59}
+                    size_hint: .86, None
+                    height: dp(88)
+                    pos_hint: {"center_x": .5, "center_y": .60}
 
                 Label:
                     text: root.progress_text
                     color: .68, .82, .84, 1
-                    font_size: "11sp"
-                    size_hint: .82, None
-                    height: dp(28)
+                    font_size: "12sp"
+                    size_hint: .86, None
+                    height: dp(34)
+                    text_size: self.size
+                    halign: "center"
+                    valign: "middle"
                     pos_hint: {"center_x": .5, "center_y": .45}
 
                 PrimaryButton:
                     text: root.primary_button_text()
-                    size_hint_x: .82
-                    pos_hint: {"center_x": .5, "y": .08}
+                    size_hint_x: .84
+                    pos_hint: {"center_x": .5, "y": .07}
                     on_release: root.toggle_timer()
 
             QuietButton:
-                text: root.t("reset")
+                text: root.t("reset", root.language)
                 on_release: root.reset_timer()
 
             QuietButton:
-                text: root.t("visuals") + ("   ▴" if root.visuals_open else "   ▾")
+                text: root.t("visuals", root.language) + ("  -" if root.visuals_open else "  +")
                 on_release: root.visuals_open = not root.visuals_open
 
             GridLayout:
@@ -399,47 +451,59 @@ KV = r"""
                 row_force_default: True
                 spacing: dp(6)
                 Label:
-                    text: root.t("water")
+                    text: root.t("water", root.language)
                     color: .72, .84, .85, 1
+                    text_size: self.size
+                    halign: "left"
+                    valign: "middle"
                 Switch:
                     active: root.water_enabled
                     on_active: root.water_enabled = self.active
                 Label:
-                    text: root.t("bubbles")
+                    text: root.t("bubbles", root.language)
                     color: .72, .84, .85, 1
+                    text_size: self.size
+                    halign: "left"
+                    valign: "middle"
                 Switch:
                     active: root.bubbles_enabled
                     on_active: root.bubbles_enabled = self.active
                 Label:
-                    text: root.t("glow")
+                    text: root.t("glow", root.language)
                     color: .72, .84, .85, 1
+                    text_size: self.size
+                    halign: "left"
+                    valign: "middle"
                 Switch:
                     active: root.glow_enabled
                     on_active: root.glow_enabled = self.active
                 Label:
-                    text: root.t("caustics")
+                    text: root.t("caustics", root.language)
                     color: .72, .84, .85, 1
+                    text_size: self.size
+                    halign: "left"
+                    valign: "middle"
                 Switch:
                     active: root.caustics_enabled
                     on_active: root.caustics_enabled = self.active
 
             QuietButton:
-                text: root.t("sound") + ("   ▴" if root.sound_open else "   ▾")
+                text: root.t("sound", root.language) + ("  -" if root.sound_open else "  +")
                 on_release: root.sound_open = not root.sound_open
 
             BoxLayout:
                 orientation: "vertical"
                 size_hint_y: None
-                height: dp(172) if root.sound_open else 0
+                height: dp(176) if root.sound_open else 0
                 opacity: 1 if root.sound_open else 0
                 disabled: not root.sound_open
                 spacing: dp(8)
                 TextInput:
                     id: music_url
-                    hint_text: root.t("music_hint")
+                    hint_text: root.t("music_hint", root.language)
                     multiline: False
                     size_hint_y: None
-                    height: dp(46)
+                    height: dp(48)
                     foreground_color: .9, .96, .96, 1
                     hint_text_color: .40, .54, .57, 1
                     background_normal: ""
@@ -451,18 +515,21 @@ KV = r"""
                     color: .52, .66, .69, 1
                     font_size: "11sp"
                     size_hint_y: None
-                    height: dp(24)
+                    height: dp(28)
+                    text_size: self.size
+                    halign: "left"
+                    valign: "middle"
                 BoxLayout:
                     size_hint_y: None
-                    height: dp(40)
+                    height: dp(42)
                     spacing: dp(8)
                     PrimaryButton:
-                        text: root.t("play")
-                        height: dp(40)
+                        text: root.t("play", root.language)
+                        height: dp(42)
                         on_release: root.play_music(music_url.text)
                     QuietButton:
-                        text: root.t("stop")
-                        height: dp(40)
+                        text: root.t("stop", root.language)
+                        height: dp(42)
                         on_release: root.stop_music()
                 Slider:
                     min: 0
@@ -473,31 +540,41 @@ KV = r"""
                     on_value: root.set_volume(self.value)
 
             Label:
-                text: root.t("today").format(n=root.sessions)
+                text: root.t("today", root.language).format(n=root.sessions)
                 color: .43, .56, .58, 1
                 font_size: "11sp"
                 size_hint_y: None
                 height: dp(30)
+
+            Label:
+                text: root.font_status
+                color: .33, .46, .48, 1
+                font_size: "10sp"
+                size_hint_y: None
+                height: dp(24)
 """
 
 
 class AndroidAudio:
-    def __init__(self, status_cb):
-        self.status_cb = status_cb
+    def __init__(self, root):
+        self.root = root
         self.player = None
         self.volume = 0.55
 
     def _resolve(self, url: str):
         low = url.lower()
         if "spotify.com" in low:
-            raise RuntimeError("Spotify full-track playback is not available on Android yet")
+            raise RuntimeError(self.root.t("spotify_unavailable"))
         if "youtube.com" in low or "youtu.be" in low or "music.youtube.com" in low:
             if yt_dlp is None:
-                raise RuntimeError("yt-dlp is unavailable")
+                raise RuntimeError(self.root.t("yt_dlp_missing"))
             opts = {
                 "format": "bestaudio[protocol^=http][acodec!=none]/bestaudio[acodec!=none]/bestaudio/best",
-                "quiet": True, "no_warnings": True, "noplaylist": True,
-                "retries": 4, "socket_timeout": 20,
+                "quiet": True,
+                "no_warnings": True,
+                "noplaylist": True,
+                "retries": 4,
+                "socket_timeout": 20,
                 "extractor_args": {"youtube": {"player_client": ["android", "ios", "web"]}},
             }
             with yt_dlp.YoutubeDL(opts) as ydl:
@@ -506,56 +583,57 @@ class AndroidAudio:
                 info = info["entries"][0] or info
             media = info.get("url")
             if not media:
-                raise RuntimeError("No playable YouTube audio stream")
+                raise RuntimeError(self.root.t("no_stream"))
             return media, dict(info.get("http_headers") or {}), info.get("title") or "YouTube"
         return url, {"User-Agent": "AquaFocus-Android/2.1.6"}, Path(urlparse(url).path).stem or "Cloud audio"
 
     def play(self, url: str):
         if platform != "android":
-            self.status_cb("Android MediaPlayer is only available on device")
+            self.root.music_status = "Android MediaPlayer only"
             return
         self.stop()
-        self.status_cb("Resolving audio...")
+        self.root.music_status = self.root.t("resolving")
 
         def worker():
             try:
                 media, headers, title = self._resolve(url)
-                Clock.schedule_once(lambda _dt: self._start_player(media, headers, title), 0)
+                self._start_player(media, headers, title)
             except Exception as exc:
-                Clock.schedule_once(lambda _dt, msg=str(exc): self.status_cb("Playback error: " + msg), 0)
+                Clock.schedule_once(
+                    lambda _dt, msg=str(exc): setattr(self.root, "music_status", self.root.t("playback_error", msg=msg)),
+                    0,
+                )
 
         threading.Thread(target=worker, daemon=True).start()
 
     def _start_player(self, media: str, headers: dict, title: str):
         try:
-            PythonActivity = autoclass("org.kivy.android.PythonActivity")
             MediaPlayer = autoclass("android.media.MediaPlayer")
             Uri = autoclass("android.net.Uri")
             HashMap = autoclass("java.util.HashMap")
+            PythonActivity = autoclass("org.kivy.android.PythonActivity")
             context = PythonActivity.mActivity
             header_map = HashMap()
             for key, value in headers.items():
                 if key and value is not None:
                     header_map.put(str(key), str(value))
-            self.player = MediaPlayer()
-            self.player.setAudioStreamType(3)
-            self.player.setDataSource(context, Uri.parse(media), header_map)
-            self.player.setLooping(True)
-            self.player.setVolume(self.volume, self.volume)
-            self.player.prepareAsync()
-
-            def poll_ready(_dt):
-                if not self.player:
-                    return False
-                try:
-                    self.player.start()
-                    self.status_cb("Playing · " + title[:48])
-                    return False
-                except Exception:
-                    return True
-            Clock.schedule_interval(poll_ready, 0.5)
+            player = MediaPlayer()
+            player.setAudioStreamType(3)
+            player.setDataSource(context, Uri.parse(media), header_map)
+            player.setLooping(True)
+            player.setVolume(self.volume, self.volume)
+            player.prepare()
+            player.start()
+            self.player = player
+            Clock.schedule_once(
+                lambda _dt: setattr(self.root, "music_status", self.root.t("playing", title=title[:48])),
+                0,
+            )
         except Exception as exc:
-            self.status_cb("MediaPlayer error: " + str(exc))
+            Clock.schedule_once(
+                lambda _dt, msg=str(exc): setattr(self.root, "music_status", self.root.t("mediaplayer_error", msg=msg)),
+                0,
+            )
 
     def set_volume(self, value):
         self.volume = max(0.0, min(1.0, float(value)))
@@ -567,10 +645,14 @@ class AndroidAudio:
 
     def stop(self):
         if self.player:
-            try: self.player.stop()
-            except Exception: pass
-            try: self.player.release()
-            except Exception: pass
+            try:
+                self.player.stop()
+            except Exception:
+                pass
+            try:
+                self.player.release()
+            except Exception:
+                pass
         self.player = None
 
 
@@ -578,13 +660,13 @@ class RootView(BoxLayout):
     running = BooleanProperty(False)
     mode = StringProperty("FOCUS")
     clock_text = StringProperty("25:00")
-    progress_text = StringProperty("準備完了")
+    progress_text = StringProperty("")
     progress = NumericProperty(0)
     work_minutes = NumericProperty(25)
     break_minutes = NumericProperty(5)
     sessions = NumericProperty(0)
     volume = NumericProperty(0.55)
-    music_status = StringProperty("停止中")
+    music_status = StringProperty("")
     intention = StringProperty("")
     sound_open = BooleanProperty(False)
     visuals_open = BooleanProperty(False)
@@ -593,21 +675,41 @@ class RootView(BoxLayout):
     glow_enabled = BooleanProperty(True)
     caustics_enabled = BooleanProperty(True)
     language = StringProperty("ja")
+    font_status = StringProperty("")
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.remaining = self.work_minutes * 60
         self.total = self.remaining
         self._last_tick = time.monotonic()
-        self.audio = AndroidAudio(self._set_music_status)
+        self.audio = AndroidAudio(self)
+        self.progress_text = self.t("ready")
+        self.music_status = self.t("stopped")
+        self.font_status = self.t("font_status_fallback")
         Clock.schedule_interval(self._tick, 0.20)
 
-    def t(self, key):
-        return STRINGS.get(self.language, STRINGS["en"]).get(key, key)
+    def t(self, key, *_args, **kwargs):
+        template = STRINGS.get(self.language, STRINGS["en"]).get(key, key)
+        try:
+            return template.format(**kwargs)
+        except Exception:
+            return template
+
+    def refresh_language_text(self):
+        if self.running:
+            self.progress_text = self.t("focused")
+        elif self.progress > 0:
+            self.progress_text = self.t("paused")
+        else:
+            self.progress_text = self.t("ready")
+        if self.music_status in (STRINGS["ja"]["stopped"], STRINGS["en"]["stopped"], ""):
+            self.music_status = self.t("stopped")
+        ok = App.get_running_app().font_name != "Roboto"
+        self.font_status = self.t("font_status_ok" if ok else "font_status_fallback")
 
     def toggle_language(self):
         self.language = "en" if self.language == "ja" else "ja"
-        self.progress_text = self.t("focused") if self.running else self.t("ready")
+        self.refresh_language_text()
         App.get_running_app().save_state()
 
     def primary_button_text(self):
@@ -689,9 +791,6 @@ class RootView(BoxLayout):
         self.volume = float(value)
         self.audio.set_volume(self.volume)
 
-    def _set_music_status(self, text):
-        self.music_status = text
-
     def _notify(self):
         if platform != "android":
             return
@@ -711,12 +810,20 @@ class AquaFocusAndroidApp(App):
 
     def build(self):
         Window.clearcolor = (0.018, 0.055, 0.085, 1)
+        self.font_name = install_android_font()
         Builder.load_string(KV)
         root = RootView()
         self.root_view = root
         self._load_state()
+        root.refresh_language_text()
         if platform == "android":
-            request_permissions([Permission.INTERNET, Permission.POST_NOTIFICATIONS, Permission.WAKE_LOCK])
+            perms = []
+            for name in ("INTERNET", "WAKE_LOCK", "POST_NOTIFICATIONS"):
+                value = getattr(Permission, name, None)
+                if value is not None:
+                    perms.append(value)
+            if perms:
+                request_permissions(perms)
         return root
 
     @property
@@ -753,7 +860,7 @@ class AquaFocusAndroidApp(App):
                 "bubbles": bool(self.root_view.bubbles_enabled),
                 "glow": bool(self.root_view.glow_enabled),
                 "caustics": bool(self.root_view.caustics_enabled),
-            }), encoding="utf-8")
+            }, ensure_ascii=False), encoding="utf-8")
         except Exception:
             pass
 
