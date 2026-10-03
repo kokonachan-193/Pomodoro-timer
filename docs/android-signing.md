@@ -1,6 +1,6 @@
 # Android release signing
 
-This project builds Android APKs through GitHub Actions. Aqua Focus v2.1.8 supports stable release signing without committing secrets to the repository.
+This project builds Android APKs through GitHub Actions. Aqua Focus v2.1.9 supports stable release signing without committing secrets to the repository.
 
 ## Why signing matters
 
@@ -53,15 +53,15 @@ Then add these repository secrets in GitHub:
 
 The release assets are:
 
-- `AquaFocus-Android-2.1.8.apk`
-- `AquaFocus-Android-2.1.8.certs.txt`
+- `AquaFocus-Android-2.1.9.apk`
+- `AquaFocus-Android-2.1.9.certs.txt`
 
 ## Verification
 
 After downloading the APK, verify the signing certificate:
 
 ```bash
-apksigner verify --print-certs AquaFocus-Android-2.1.8.apk
+apksigner verify --print-certs AquaFocus-Android-2.1.9.apk
 ```
 
-Compare the SHA-256 digest with `AquaFocus-Android-2.1.8.certs.txt` and the shortened SHA-256 shown in the app footer.
+Compare the SHA-256 digest with `AquaFocus-Android-2.1.9.certs.txt` and the shortened SHA-256 shown in the app footer.
