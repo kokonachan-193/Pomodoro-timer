@@ -1931,6 +1931,13 @@ class WaterTimer(ctk.CTk):
         for attr, key in (
             ("sidebar_sub", "app_subtitle"),
             ("sidebar_science", "science_badge"),
+            ("workspace_section_lbl", "workspace"),
+            ("reduce_motion_sw", "reduce_motion"),
+            ("dashboard_tasks_btn", "nav_tasks"),
+            ("dashboard_stats_btn", "nav_stats"),
+            ("quick_dive_title", "quick_dive"),
+            ("quick_dive_sub", "quick_dive_sub"),
+            ("playlist_section_lbl", "playlist"),
             ("sidebar_focus_lock", "focus_lock"),
             ("temptation_exclude_btn", "temptation_exclude_btn"),
             ("sidebar_presets", "presets"),
@@ -2018,6 +2025,18 @@ class WaterTimer(ctk.CTk):
                 self.hero_sub.configure(text=t("hero_sub_default"))
             except Exception:
                 pass
+        if hasattr(self, "workspace_buttons") and len(self.workspace_buttons) >= 4:
+            for button, key in zip(self.workspace_buttons, ("tasks_title", "stats_title", "soundscape_title", "extensions_title")):
+                try:
+                    button.configure(text=t(key))
+                except Exception:
+                    pass
+        if hasattr(self, "v2_mode_buttons") and len(self.v2_mode_buttons) >= 5:
+            for button, key in zip(self.v2_mode_buttons, ("quick_focus", "quick_deep", "quick_countdown", "quick_stopwatch", "quick_alarm")):
+                try:
+                    button.configure(text=t(key))
+                except Exception:
+                    pass
         self._rebuild_preset_buttons()
         self._refresh_temptation_btn()
         self._refresh_playlist_ui()
@@ -2116,17 +2135,17 @@ class WaterTimer(ctk.CTk):
         self.sidebar_science.pack(padx=16, pady=(4, 0), anchor="w")
 
         self.workspace_section_lbl = ctk.CTkLabel(
-            self.sidebar, text="WORKSPACE",
+            self.sidebar, text=self.t("workspace"),
             font=ctk.CTkFont(family=FONT_UI_BOLD, size=10),
             text_color=self.theme.accent,
         )
         self.workspace_section_lbl.pack(pady=(14, 5), padx=16, anchor="w")
         self.workspace_buttons = []
         for label, command in (
-            ("Coral Tasks", self.workspace.open_tasks),
-            ("Abyss Stats", self.workspace.open_stats),
-            ("Ocean Soundscape", self.workspace.open_soundscape),
-            ("Reef Extensions", self.workspace.open_extensions),
+            (self.t("tasks_title"), self.workspace.open_tasks),
+            (self.t("stats_title"), self.workspace.open_stats),
+            (self.t("soundscape_title"), self.workspace.open_soundscape),
+            (self.t("extensions_title"), self.workspace.open_extensions),
         ):
             btn = ctk.CTkButton(
                 self.sidebar,
@@ -2309,7 +2328,7 @@ class WaterTimer(ctk.CTk):
 
         self.reduce_motion_sw = ctk.CTkSwitch(
             self.sidebar,
-            text="Reduce Motion",
+            text=self.t("reduce_motion"),
             font=ctk.CTkFont(family=FONT_UI, size=11),
             text_color=self.theme.text,
             progress_color=self.theme.accent,
@@ -2369,14 +2388,14 @@ class WaterTimer(ctk.CTk):
         self.dashboard_actions = ctk.CTkFrame(self.setup_frame, fg_color="transparent")
         self.dashboard_actions.pack(fill="x", pady=(4, 0))
         self.dashboard_tasks_btn = ctk.CTkButton(
-            self.dashboard_actions, text="Tasks", width=78, height=34, corner_radius=17,
+            self.dashboard_actions, text=self.t("nav_tasks"), width=78, height=34, corner_radius=17,
             fg_color="transparent", hover_color=self.theme.glow,
             border_width=1, border_color=self.theme.glow, text_color=self.theme.text,
             command=self.workspace.open_tasks,
         )
         self.dashboard_tasks_btn.pack(side="right", padx=(6, 0))
         self.dashboard_stats_btn = ctk.CTkButton(
-            self.dashboard_actions, text="Stats", width=78, height=34, corner_radius=17,
+            self.dashboard_actions, text=self.t("nav_stats"), width=78, height=34, corner_radius=17,
             fg_color="transparent", hover_color=self.theme.glow,
             border_width=1, border_color=self.theme.glow, text_color=self.theme.text,
             command=self.workspace.open_stats,
@@ -2418,6 +2437,7 @@ class WaterTimer(ctk.CTk):
             self.setup_frame,
             theme_getter=lambda: self.theme,
             reduce_motion_getter=lambda: self.reduce_motion,
+            text_getter=self.t,
             font_family=FONT_UI,
             height=145,
         )
@@ -2433,15 +2453,15 @@ class WaterTimer(ctk.CTk):
         self.mode_launcher.pack(fill="x", pady=(0, 14))
         mode_head = ctk.CTkFrame(self.mode_launcher, fg_color="transparent")
         mode_head.pack(fill="x", padx=16, pady=(13, 8))
-        ctk.CTkLabel(
+        self.quick_dive_title = ctk.CTkLabel(
             mode_head,
-            text="QUICK DIVE",
+            text=self.t("quick_dive"),
             font=ctk.CTkFont(family=FONT_UI_BOLD, size=12),
             text_color=self.theme.accent,
         ).pack(side="left")
-        ctk.CTkLabel(
+        self.quick_dive_sub = ctk.CTkLabel(
             mode_head,
-            text="Choose how you want to focus",
+            text=self.t("quick_dive_sub"),
             font=ctk.CTkFont(family=FONT_UI, size=11),
             text_color=self.theme.muted,
         ).pack(side="right")
@@ -2452,11 +2472,11 @@ class WaterTimer(ctk.CTk):
         mode_row.grid_columnconfigure(1, weight=1)
         self.v2_mode_buttons = []
         mode_specs = [
-            ("FOCUS\nPomodoro & presets", self.start_immersive_timer, self.theme.accent),
-            ("DEEP DIVE\n90 min · minimal", self.start_deep_dive_mode, self.theme.wave_front_break),
-            ("COUNTDOWN\nSingle timer", self.v2_modes.open_countdown, self.theme.glow),
-            ("STOPWATCH\nOpen-ended flow", self.v2_modes.open_stopwatch, self.theme.glow),
-            ("BLUE ALARM\nOne-time reminder", self.v2_modes.open_alarm, "#8a6a20"),
+            (self.t("quick_focus"), self.start_immersive_timer, self.theme.accent),
+            (self.t("quick_deep"), self.start_deep_dive_mode, self.theme.wave_front_break),
+            (self.t("quick_countdown"), self.v2_modes.open_countdown, self.theme.glow),
+            (self.t("quick_stopwatch"), self.v2_modes.open_stopwatch, self.theme.glow),
+            (self.t("quick_alarm"), self.v2_modes.open_alarm, "#8a6a20"),
         ]
         for i, (label, command, color) in enumerate(mode_specs):
             btn = ctk.CTkButton(
@@ -3243,10 +3263,11 @@ class WaterTimer(ctk.CTk):
             text_color=self.theme.muted, command=self.close_focus_menu,
         ).pack(side="right")
 
-        ctk.CTkLabel(
-            panel, text="PLAYLIST", font=ctk.CTkFont(size=11),
+        self.playlist_section_lbl = ctk.CTkLabel(
+            panel, text=self.t("playlist"), font=ctk.CTkFont(size=11),
             text_color=self.theme.muted,
-        ).pack(anchor="w", padx=16, pady=(8, 4))
+        )
+        self.playlist_section_lbl.pack(anchor="w", padx=16, pady=(8, 4))
 
         self.playlist_box = ctk.CTkScrollableFrame(
             panel, height=180, fg_color=self.theme.bg, corner_radius=10,
@@ -3698,7 +3719,7 @@ class WaterTimer(ctk.CTk):
                     if was_playing or (self.wave_frame.winfo_ismapped() and self.mode == "Work"):
                         self.music.play()
                 else:
-                    self._on_music_status(f"失敗: {msg}")
+                    self._on_music_status(self.t("failed_msg", msg=msg))
                     self.menu_status.configure(text=f"失敗: {msg}")
             self.after(0, ui)
 
@@ -3729,7 +3750,7 @@ class WaterTimer(ctk.CTk):
 
     def _toggle_calm(self):
         self._calm_focus = bool(self.calm_var.get())
-        self.menu_status.configure(text="Calm Focus ON" if self._calm_focus else "Calm Focus OFF")
+        self.menu_status.configure(text=self.t("calm_on") if self._calm_focus else self.t("calm_off"))
         if not self._calm_focus:
             self._reveal_chrome()
 
@@ -3758,15 +3779,15 @@ class WaterTimer(ctk.CTk):
         url = self.entry_music.get().strip()
         self.music.set_url(url)
         if not url:
-            self._on_music_status("URL が空です")
+            self._on_music_status(self.t("url_empty"))
             return
         kind = MusicController.detect_kind(url)
         if kind == "spotify":
-            self._on_music_status("Spotify → アプリ内ストリーム準備中…")
+            self._on_music_status(self.t("spotify_preparing"))
         elif kind == "direct":
-            self._on_music_status("ストリーム準備（ダウンロードなし）…")
+            self._on_music_status(self.t("direct_preparing"))
         else:
-            self._on_music_status("YouTube のタイトル / ジャケット取得中…")
+            self._on_music_status(self.t("youtube_preparing"))
 
         def done(ok: bool, msg: str):
             def ui():
@@ -3775,7 +3796,7 @@ class WaterTimer(ctk.CTk):
                 if ok:
                     self._on_music_status(f"♪ {self.music.display_title()}")
                 else:
-                    self._on_music_status(f"失敗: {msg}")
+                    self._on_music_status(self.t("failed_msg", msg=msg))
             self.after(0, ui)
 
         self.music.prepare_async(done)
@@ -4726,7 +4747,7 @@ class WaterTimer(ctk.CTk):
         self.settings.set("reduce_motion", self.reduce_motion)
         try:
             self.hero_sub.configure(
-                text="Reduced motion enabled" if self.reduce_motion else self.t("hero_sub_default")
+                text=self.t("reduced_motion_enabled") if self.reduce_motion else self.t("hero_sub_default")
             )
         except Exception:
             pass
@@ -4741,14 +4762,14 @@ class WaterTimer(ctk.CTk):
         self.set_preset(
             90,
             20,
-            "Deep Dive",
+            self.t("deep_dive"),
             long_break=20,
             long_every=1,
             cycles=1,
-            blurb="One long, quiet block with minimal chrome.",
+            blurb=self.t("deep_dive_blurb"),
             key="deep-dive",
         )
-        self.hero_sub.configure(text="Deep Dive · 90 minutes · distractions fade away")
+        self.hero_sub.configure(text=self.t("deep_dive_status"))
         self.after(90, self.start_immersive_timer)
 
     def start_immersive_timer(self):
