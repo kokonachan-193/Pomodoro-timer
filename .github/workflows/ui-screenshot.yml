@@ -6,6 +6,7 @@ on:
     paths:
       - "main.py"
       - "v2_minimal.py"
+      - "scripts/ui_smoke.py"
       - ".github/workflows/ui-screenshot.yml"
   workflow_dispatch:
 
@@ -29,6 +30,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+      - name: GUI smoke test
+        env:
+          DISPLAY: ":99"
+        run: |
+          xvfb-run -a python scripts/ui_smoke.py
+
       - name: Launch and capture responsive previews
         env:
           DISPLAY: ":99"
