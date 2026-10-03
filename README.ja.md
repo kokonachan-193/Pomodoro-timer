@@ -12,7 +12,7 @@
 <p align="center">
   <a href="README.md">English</a>
   ·
-  <a href="https://github.com/kokonachan-193/Pomodoro-timer/releases/tag/v2.1.9"><strong>Aqua Focus v2.1.9</strong></a>
+  <a href="https://github.com/kokonachan-193/Pomodoro-timer/releases/tag/v2.1.10"><strong>Aqua Focus v2.1.10</strong></a>
   ·
   Windows · macOS · Ubuntu · Linux · Android
 </p>
@@ -21,16 +21,16 @@
 
 ## ダウンロードして使う
 
-GitHub Release の [**Aqua Focus v2.1.9**](https://github.com/kokonachan-193/Pomodoro-timer/releases/tag/v2.1.9) から使用するOS向けのパッケージを取得できます。
+GitHub Release の [**Aqua Focus v2.1.10**](https://github.com/kokonachan-193/Pomodoro-timer/releases/tag/v2.1.10) から使用するOS向けのパッケージを取得できます。
 
 | **ファイル / File** | **対象 / Platform** | **使い方 / How** |
 | :--- | :--- | :--- |
-| **AquaFocusSetup-2.1.9.exe** | Windows 10 / 11 | インストーラを実行 / Run the installer |
-| **AquaFocus-Windows-Portable-2.1.9.zip** | Windows 10 / 11 | 解凍 → `AquaFocus.exe` / Unzip → `AquaFocus.exe` |
-| **AquaFocus-macOS-2.1.9.zip** | macOS | 解凍 → `AquaFocus.app` / Unzip → open `AquaFocus.app` |
-| **AquaFocus-Linux-Portable-2.1.9.tar.gz** | Linux | 解凍 → `./AquaFocus/AquaFocus` / Extract → run `./AquaFocus/AquaFocus` |
-| **AquaFocus-Ubuntu-Portable-2.1.9.tar.gz** | Ubuntu | Linux版と同じ / Same as Linux build |
-| **AquaFocus-Android-2.1.9.apk** | Android 8.0+ / arm64-v8a | APKを端末へインストール / Install the APK on your device |
+| **AquaFocusSetup-2.1.10.exe** | Windows 10 / 11 | インストーラを実行 / Run the installer |
+| **AquaFocus-Windows-Portable-2.1.10.zip** | Windows 10 / 11 | 解凍 → `AquaFocus.exe` / Unzip → `AquaFocus.exe` |
+| **AquaFocus-macOS-2.1.10.zip** | macOS | 解凍 → `AquaFocus.app` / Unzip → open `AquaFocus.app` |
+| **AquaFocus-Linux-Portable-2.1.10.tar.gz** | Linux | 解凍 → `./AquaFocus/AquaFocus` / Extract → run `./AquaFocus/AquaFocus` |
+| **AquaFocus-Ubuntu-Portable-2.1.10.tar.gz** | Ubuntu | Linux版と同じ / Same as Linux build |
+| **AquaFocus-Android-2.1.10.apk** | Android 8.0+ / arm64-v8a | APKを端末へインストール / Install the APK on your device |
 
 デスクトップ版は ffmpeg **同梱**。既存版は **AGIU** からGitHub Releasesの更新を確認できます。
 
@@ -38,15 +38,15 @@ Android署名メモ: [`docs/android-signing.md`](docs/android-signing.md)
 
 ---
 
-## v2.1.9 の新機能
+## v2.1.10 の新機能
 
-- **v2.1.6と同じRelease形式に整理** — Windowsインストーラ、Windowsポータブル、macOS、Linux、Ubuntu、Android APKの6成果物をRelease本文の表へ明記します。
-- **GUI安定化を強化** — リサイズ連打、テーマ再構築、Focus停止、コンパクト画面切替で古いTk/CTk widget参照を触りにくくしました。
-- **Focus描画の安全フォールバック** — アニメーション描画で例外が出ても、空白や半端な描画で止まらず、最低限のAqua背景へ復帰します。
-- **アニメーション拡張の即時反映を継続補強** — `extensions.json` をFocus中にも再読込し、インストール/削除後に再起動なしで反映します。
-- **Focus時計と操作UIの再配置補正** — update tick後にも時計サイズ・Focus操作ボタンを再スケールして、巨大化や位置ズレを抑えます。
-- **AGIUの現在版を更新** — デスクトップ更新機能がv2.1.9を現在版として扱います。
-- **Android 2.1.9配布対応** — Buildozer版数、GitHub Actions成果物名、Release添付先をv2.1.9へ統一しました。
+- **Focus中のアニメーション拡張を見える強さへ修正** — ONにした桜・雨・雪・蛍・魚・泡・粒子が、濃い背景画像の上でも分かるように数・速度・明るさを上げました。
+- **拡張ON/OFFの即時反映を強化** — `extensions.json` をFocus中にも再読込し、保存直後に複数回再描画して、切り替えが無反応に見える状態を減らします。
+- **Reduce Motionでも完全には消えない** — 動きは抑えつつ、ON状態が分かる静かなFX表示を残します。
+- **Focus描画の上位FXレイヤーを追加** — 既存の落ち着いたAqua描画を残しつつ、拡張アニメーションだけを別レイヤーで重ねて表示します。
+- **v2.1.9のインストーラ版数固定も修正済み** — Inno SetupへVERSIONを渡し、`AquaFocusSetup-2.1.10.exe` が正しく生成されるようにしました。
+- **AGIUの現在版を更新** — デスクトップ更新機能がv2.1.10を現在版として扱います。
+- **Android 2.1.10配布対応** — Buildozer版数、GitHub Actions成果物名、Release添付先をv2.1.10へ統一しました。
 
 ---
 
