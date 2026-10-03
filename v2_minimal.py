@@ -12,6 +12,7 @@ from __future__ import annotations
 import math
 import tkinter as tk
 import customtkinter as ctk
+from PIL import Image, ImageDraw, ImageTk
 
 
 class MinimalShell:
@@ -28,6 +29,7 @@ class MinimalShell:
         self.duration_buttons = {}
         self._sound_open = False
         self._focus_phase = 0.0
+        self._water_photo = None
         self.intent_entry = None
         self.music_entry = None
         self.start_button = None
@@ -702,37 +704,31 @@ class MinimalShell:
             main_surface = surface_points()
             back_surface = surface_points(offset=9 * strength, amp=0.68, phase_shift=1.35)
 
-            # Back layer.
-            back_poly = [(0, h)] + back_surface + [(w, h)]
-            c.create_polygon(
-                *[v for p in back_poly for v in p],
-                fill=self._blend(t.bg, t.accent, min(0.28, 0.12 * strength)),
-                outline=""
-            )
-            # Main translucent-like layer. Tk has no alpha, so blend with the
-            # current background to simulate translucency without a boxed edge.
-            main_poly = [(0, h)] + main_surface + [(w, h)]
-            c.create_polygon(
-                *[v for p in main_poly for v in p],
-                fill=self._blend(t.bg, t.accent, min(0.40, 0.19 * strength)),
-                outline=""
-            )
-
-            # A soft vertical depth gradient inside the water body.
-            gradient_top = water_y + max(8.0, wave_amp * 1.7)
-            depth = max(1, int(h - gradient_top))
-            bands = 7
-            for band in range(bands):
-                y0 = gradient_top + depth * band / bands
-                y1 = gradient_top + depth * (band + 1) / bands + 1
-                amount = min(0.46, (0.10 + 0.035 * band) * strength)
-                c.create_rectangle(
-                    0, y0, w, y1,
-                    fill=self._blend(t.bg, t.accent, amount),
+            # True RGBA water overlay: the selected Focus background remains
+            # visible through the water instead of being replaced by a solid box.
+            try:
+                def rgb(value):
+                    value = str(value).lstrip("#")
+                    return tuple(int(value[i:i+2], 16) for i in (0, 2, 4))
+                wr, wg, wb = rgb(t.accent)
+                overlay = Image.new("RGBA", (max(1, int(w)), max(1, int(h))), (0, 0, 0, 0))
+                draw = ImageDraw.Draw(overlay, "RGBA")
+                back_poly = [(0, int(h))] + [(int(x), int(y)) for x, y in back_surface] + [(int(w), int(h))]
+                main_poly = [(0, int(h))] + [(int(x), int(y)) for x, y in main_surface] + [(int(w), int(h))]
+                draw.polygon(back_poly, fill=(wr, wg, wb, max(22, min(72, int(42 * strength)))))
+                draw.polygon(main_poly, fill=(wr, wg, wb, max(34, min(108, int(68 * strength)))))
+                self._water_photo = ImageTk.PhotoImage(overlay)
+                c.create_image(0, 0, image=self._water_photo, anchor="nw")
+            except Exception:
+                main_poly = [(0, h)] + main_surface + [(w, h)]
+                c.create_polygon(
+                    *[v for p in main_poly for v in p],
+                    fill=self._blend(t.bg, t.accent, min(0.32, 0.16 * strength)),
                     outline=""
                 )
 
-            # Repaint the animated water surface after gradient bands.
+            depth = max(1, int(h - water_y))
+            # Repaint the animated water surface on top of the translucent body.
             crest = []
             for x, y in main_surface:
                 crest.extend((x, y))
