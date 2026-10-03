@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Callable
 
 APP_NAME = "Aqua Focus"
-APP_VERSION = "2.1.6"
+APP_VERSION = "2.1.9"
 GITHUB_OWNER = "kokonachan-193"
 GITHUB_REPO = "Pomodoro-timer"
 API_LATEST = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/releases/latest"
@@ -171,7 +171,6 @@ def apply_update(package: Path, release: ReleaseInfo) -> None:
     staging.mkdir(parents=True, exist_ok=True)
 
     if name.endswith(".exe") and sys.platform == "win32":
-        # Inno Setup — launch installer then quit
         subprocess.Popen([str(package)], close_fds=True)
         return
 
@@ -184,7 +183,6 @@ def apply_update(package: Path, release: ReleaseInfo) -> None:
     else:
         raise RuntimeError(f"Unsupported package: {package.name}")
 
-    # Locate payload root (folder with AquaFocus.exe / AquaFocus / .app)
     payload = extract_dir
     kids = list(extract_dir.iterdir())
     if len(kids) == 1 and kids[0].is_dir():
@@ -211,7 +209,6 @@ def apply_update(package: Path, release: ReleaseInfo) -> None:
             "bat",
         )
     elif sys.platform == "darwin":
-        # Prefer replacing .app in /Applications or install_dir
         app_src = payload if payload.suffix == ".app" or payload.name.endswith(".app") else None
         if app_src is None:
             found = list(extract_dir.glob("*.app"))
@@ -232,7 +229,6 @@ def apply_update(package: Path, release: ReleaseInfo) -> None:
             "sh",
         )
     else:
-        # Linux onedir
         relaunch = str(install_dir / "AquaFocus")
         if not Path(relaunch).exists():
             relaunch = sys.executable
