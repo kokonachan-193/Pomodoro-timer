@@ -1,17 +1,15 @@
 """Desktop runtime fixes for Aqua Focus.
 
-This module is intentionally small and loaded very early by either:
+Loaded early by either:
 - sitecustomize.py during source runs, or
 - pyinstaller_runtime_hook.py inside packaged desktop builds.
 
-It patches only the runtime surfaces that caused desktop regressions:
-- Extension install/remove is now reflected in Focus immediately.
-- Installed animation state is reloaded from disk while Focus is running.
-- Legacy extension data is normalized instead of silently ignored.
-- Focus text/layout is re-scaled after each draw so resize glitches do not
-  snap the timer back to a huge fixed font.
-- A few stale Tk widget calls are guarded to prevent random GUI display errors
-  after responsive rebuilds.
+v2.1.9 goals:
+- keep Focus animation extensions live without restarting Focus
+- avoid random Tk/CTk display crashes after resize/theme rebuilds
+- debounce expensive redraw/layout work during resize storms
+- keep Focus typography responsive instead of snapping back to a fixed huge size
+- make drawing failures recover to a safe modern fallback frame
 """
 
 from __future__ import annotations
@@ -32,16 +30,69 @@ def _widget_alive(widget) -> bool:
         return False
 
 
-def _call_on_ui(root, callback) -> None:
+def _safe_call(fn, *args, **kwargs):
+    try:
+        return fn(*args, **kwargs)
+    except Exception:
+        return None
+
+
+def _call_on_ui(root, callback, delay: int = 0) -> None:
     """Run a small UI callback without assuming the Tk object is still alive."""
     if _widget_alive(root):
         try:
-            root.after(0, callback)
+            root.after(delay, callback)
             return
         except Exception:
             pass
+    _safe_call(callback)
+
+
+def _debounce(widget, attr: str, delay: int, callback) -> None:
+    """Collapse resize/redraw storms into one UI callback."""
+    if not _widget_alive(widget):
+        _safe_call(callback)
+        return
+    old = getattr(widget, attr, None)
+    if old is not None:
+        try:
+            widget.after_cancel(old)
+        except Exception:
+            pass
     try:
-        callback()
+        setattr(widget, attr, widget.after(delay, callback))
+    except Exception:
+        setattr(widget, attr, None)
+        _safe_call(callback)
+
+
+def _safe_canvas_clear(app) -> None:
+    try:
+        c = getattr(app, "canvas", None)
+        if c is not None:
+            c.delete("all")
+    except Exception:
+        pass
+
+
+def _draw_safe_focus_fallback(app, ring: bool = True) -> None:
+    """Draw a minimal modern fallback so a canvas error never blanks Focus."""
+    try:
+        c = getattr(app, "canvas", None)
+        if c is None:
+            return
+        c.delete("all")
+        w, h = max(1, c.winfo_width()), max(1, c.winfo_height())
+        t = app.theme
+        for i in range(10):
+            y0 = int(i * h / 10)
+            y1 = int((i + 1) * h / 10) + 1
+            fill = getattr(app.minimal_shell, "_blend", lambda a, b, m: a)(t.bg, t.glow, 0.03 + i * 0.012)
+            c.create_rectangle(0, y0, w, y1, fill=fill, outline="")
+        if ring:
+            cx, cy = w / 2, h * 0.40
+            r = min(w, h) * 0.18
+            c.create_oval(cx - r, cy - r, cx + r, cy + r, outline=t.accent, width=3)
     except Exception:
         pass
 
@@ -152,36 +203,24 @@ def _install_workspace_patch() -> None:
             return
 
         def redraw():
+            _safe_call(_reload_extensions_if_needed, self, True)
             try:
-                _reload_extensions_if_needed(self, force=True)
-            except Exception:
-                pass
-            try:
-                # Visible Focus canvas: redraw immediately so install/remove is
-                # not delayed until the next timer tick or restart.
                 wave_frame = getattr(root, "wave_frame", None)
                 if _widget_alive(wave_frame) and wave_frame.winfo_ismapped():
                     root.draw_waves(frozen=bool(getattr(root, "is_paused", False)))
-                    try:
-                        root._place_secondary_chrome()
-                    except Exception:
-                        pass
+                    _safe_call(root._place_secondary_chrome)
                 else:
                     shell = getattr(root, "minimal_shell", None)
                     if shell is not None and callable(getattr(shell, "draw_focus_canvas", None)):
                         shell.draw_focus_canvas(frozen=bool(getattr(root, "is_paused", False)))
-                # Home background can also depend on visual settings.
                 shell = getattr(root, "minimal_shell", None)
                 if shell is not None:
-                    try:
-                        shell.refresh_background()
-                    except Exception:
-                        pass
+                    _safe_call(shell.refresh_background)
                 root._focus_fx_revision = time.time()
             except Exception:
-                pass
+                _draw_safe_focus_fallback(root)
 
-        _call_on_ui(root, redraw)
+        _debounce(root, "_extension_redraw_after", 30, redraw)
 
     def __init__(self, root, *, data_dir: Path, theme_getter, font_family: str, font_bold: str):
         self.root = root
@@ -196,8 +235,6 @@ def _install_workspace_patch() -> None:
         existed = self.installed_extensions_path.exists()
         self.installed_extensions = _load_installed(self)
         self._extensions_mtime = self.installed_extensions_path.stat().st_mtime if existed else 0.0
-        # First run: ship a visible animation pack. Later, respect the user's
-        # choice even if they remove every animation.
         if not existed and not any(str(x.get("type")) == "animation" for x in self.installed_extensions):
             self.installed_extensions.extend(dict(x, enabled=True) for x in self.BUILTIN_ANIMATIONS)
             _save_installed(self)
@@ -238,17 +275,7 @@ def _install_minimal_patch() -> None:
                 try:
                     return original_draw_waves(*args, **kwargs)
                 except Exception:
-                    # A drawing failure should not break the timer or leave a
-                    # half-drawn canvas. The next tick/resize can redraw again.
-                    try:
-                        c = getattr(app, "canvas", None)
-                        if c is not None:
-                            c.delete("all")
-                            w, h = max(1, c.winfo_width()), max(1, c.winfo_height())
-                            t = app.theme
-                            c.create_rectangle(0, 0, w, h, fill=t.bg, outline="")
-                    except Exception:
-                        pass
+                    _draw_safe_focus_fallback(app, ring=False)
                     return None
             app.draw_waves = draw_waves_wrapper
 
@@ -258,12 +285,11 @@ def _install_minimal_patch() -> None:
                 try:
                     return original_update_loop(*args, **kwargs)
                 finally:
-                    # main.py used to force the v3 timer back to 94px every tick.
-                    # Reapply the responsive scale after that write.
                     try:
                         if getattr(app, "_v3_focus", False) and _widget_alive(getattr(app, "wave_frame", None)):
                             if app.wave_frame.winfo_ismapped():
                                 shell._apply_focus_scale()
+                                _safe_call(app._place_secondary_chrome)
                     except Exception:
                         pass
             app.update_loop = update_loop_wrapper
@@ -274,28 +300,35 @@ def _install_minimal_patch() -> None:
                 try:
                     return original_stop_timer(*args, **kwargs)
                 finally:
-                    try:
-                        shell._apply_home_layout()
-                    except Exception:
-                        pass
+                    _debounce(app, "_post_stop_layout_after", 45, lambda: _safe_call(shell._apply_home_layout))
             app.stop_timer = stop_timer_wrapper
 
         original_pulse = getattr(app, "_pulse_widget", None)
         if callable(original_pulse):
             def pulse_wrapper(widget, steps: int = 8):
                 if not _widget_alive(widget):
-                    return
+                    return None
                 try:
                     return original_pulse(widget, steps=steps)
                 except Exception:
                     return None
             app._pulse_widget = pulse_wrapper
 
+        original_place = getattr(shell, "place_focus_chrome", None)
+        if callable(original_place):
+            def place_focus_chrome_wrapper(*args, **kwargs):
+                try:
+                    return original_place(*args, **kwargs)
+                except Exception:
+                    return None
+            shell.place_focus_chrome = place_focus_chrome_wrapper
+
         app._pc_runtime_fixed = True
 
     def install_wrapper(self, *args, **kwargs):
         result = original_install(self, *args, **kwargs)
         _patch_app_instance(self)
+        _debounce(getattr(self, "surface", None), "_v219_initial_layout_after", 50, lambda: _safe_call(self._apply_home_layout))
         return result
 
     def draw_focus_canvas_wrapper(self, frozen=False):
@@ -309,17 +342,7 @@ def _install_minimal_patch() -> None:
         try:
             return original_draw(self, frozen=frozen)
         except Exception:
-            # Never let a drawing error kill the timer loop. Show a safe fallback
-            # frame so the user still sees time/control widgets.
-            try:
-                c = app.canvas
-                c.delete("all")
-                w, h = max(1, c.winfo_width()), max(1, c.winfo_height())
-                t = app.theme
-                c.create_rectangle(0, 0, w, h, fill=t.bg, outline="")
-                c.create_oval(w * .32, h * .20, w * .68, h * .56, outline=t.accent, width=3)
-            except Exception:
-                pass
+            _draw_safe_focus_fallback(app)
             return None
 
     def _fx_on(self, extension_id: str) -> bool:
@@ -343,7 +366,6 @@ def install() -> None:
         _install_minimal_patch()
         _PATCHED = True
     except Exception:
-        # Startup must not fail because of a runtime safety patch.
         pass
 
 
